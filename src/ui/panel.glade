@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+<glade-interface>
+	<widget class="GtkEventBox" id="mumbles_eventbox">
+		<property name="visible">True</property>
+		<signal name="button-press-event" handler="on_panel_clicked"/>
+		<child>
+			<widget class="GtkImage" id="panel_icon_image">
+				<property name="visible">True</property>
+				<property name="pixbuf">mumbles.png</property>
+			</widget>
+		</child>
+	</widget>
+
+	<widget class="GtkMenu" id="mumbles_menu">
+		<property name="visible">True</property>
+		<child>
+			<widget class="GtkImageMenuItem" id="mumbles_menu_preferences">
+				<property name="visible">True</property>
+				<property name="label">gtk-preferences</property>
+				<property name="use_stock">True</property>
+				<signal name="activate" handler="on_preferences_activate"/>
+			</widget>
+		</child>
+		<child>
+			<widget class="GtkImageMenuItem" id="mumbles_menu_about">
+				<property name="visible">True</property>
+				<property name="label">gtk-about</property>
+				<property name="use_stock">True</property>
+				<signal name="activate" handler="on_about_activate"/>
+			</widget>
+		</child>
+		<child>
+			<widget class="GtkSeparatorMenuItem" id="menu_sep">
+				<property name="visible">True</property>
+			</widget>
+		</child>
+		<child>
+			<widget class="GtkImageMenuItem" id="mumbles_menu_quit">
+				<property name="visible">True</property>
+				<property name="label">gtk-quit</property>
+				<property name="use_stock">True</property>
+				<signal name="activate" handler="on_quit_activate"/>
+			</widget>
+		</child>
+	</widget>
+
+	<widget class="GtkAboutDialog" id="mumbles_about">
+		<property name="visible">False</property>
+		<property name="destroy_with_parent">True</property>
+		<property name="name" translatable="yes">mumbles</property>
+		<property name="comments" translatable="yes">Plugin Based Notification System</property>
+		<property name="website">http://www.mumbles-project.com</property>
+		<property name="authors">dot_j &lt;dot_j@mumbles-project.org&gt;</property>
+		<property name="logo">mumbles_text.png</property>
+		<property name="icon">mumbles.png</property>
+		<signal name="response" handler="on_about_response"/>
+		<signal name="destroy" handler="on_about_destroy"/>
+		<signal name="delete-event" handler="on_about_delete"/>
+	</widget>
+</glade-interface>
