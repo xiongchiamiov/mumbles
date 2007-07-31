@@ -8,12 +8,22 @@
 #------------------------------------------------------------------------
 
 import os
+import getopt 
 import sys
 import pkg_resources
 
 import gtk.glade
 
-import egg.trayicon
+USE_EGG_TRAYICON = True 
+try:
+	import pygtk
+	pygtk.require('2.0')
+	if gtk.pygtk_version[0] == 2 and gtk.pygtk_version[1] >= 10:
+		USE_EGG_TRAYICON = False
+except:
+	pass
+if USE_EGG_TRAYICON:
+	import egg.trayicon 
 
 import dbus
 import dbus.service
@@ -28,10 +38,13 @@ from MumblesOptions import *
 from MumblesDBus import *
 
 
+class Usage(Exception):
+        def __init__(self, msg=None):
+                self.msg = 'Usage: Mumbles.py [-v] [-d]'
+
 class Mumbles(object):
 
-	def __init__(self, verbose):
-		self.__verbose = verbose
+	def __init__(self):
 		self.__bus = None
 		self.__mumbles_notify = None
 		self.__plugins = {}
@@ -63,15 +76,26 @@ class Mumbles(object):
 	def __delete_event(self, widget, event):
 		return True
 
-	def __menu_activate(self, widget, event):
+	# menu activation for gtk.StatusIcon
+	def __menu_activate(self, status_icon, button, activate_time):
 		signals = {
 			"on_preferences_activate" : self.__menu_preferences_activate,
 			"on_about_activate" : self.__menu_about_activate,
 			"on_quit_activate" : self.__menu_quit_activate
 		}
-		menu_widget = self.__get_widget_by_name(self.__panel_glade, "mumbles_menu", signals)
-		menu_widget.set_screen(widget.get_screen())
-		menu_widget.popup(None, None, None, event.button, event.time)
+		self.__get_widget_by_name(self.__panel_glade, 'mumbles_menu', signals).popup(None, None, None, button, activate_time)
+
+	# menu activation for egg.trayicon
+	def __egg_menu_activate(self, widget, event=None):
+		if event.button == 3:
+			signals = {
+				"on_preferences_activate" : self.__menu_preferences_activate,
+				"on_about_activate" : self.__menu_about_activate,
+				"on_quit_activate" : self.__menu_quit_activate
+			}
+			menu_widget = self.__get_widget_by_name(self.__panel_glade, "mumbles_menu", signals)
+			menu_widget.set_screen(widget.get_screen())
+			menu_widget.popup(None, None, None, event.button, event.time)
 
 	def __preferences_ok(self, widget):
 
@@ -165,16 +189,46 @@ class Mumbles(object):
 		return w.get_widget(name)
 
 	def __create_panel_applet(self):
-		signals = {
-			"on_panel_clicked" : self.__menu_activate,
-		}
-		eventbox_widget = self.__get_widget_by_name(self.__panel_glade, 'mumbles_eventbox', signals)
+		if USE_EGG_TRAYICON:
+			signals = {
+				"on_panel_clicked" : self.__egg_menu_activate,
+			}
+			eventbox_widget = self.__get_widget_by_name(self.__panel_glade, 'mumbles_eventbox', signals)
 
-		tray = egg.trayicon.TrayIcon("Mumbles")
-		tray.add(eventbox_widget)
-		tray.show_all()
+			tray = egg.trayicon.TrayIcon("Mumbles")
+			tray.add(eventbox_widget)
+			tray.show_all()
+		else:
+			tray = gtk.StatusIcon()
+			panel_icon = self.__get_widget_by_name(self.__panel_glade, 'panel_icon_image').get_pixbuf()
+			tray.set_from_pixbuf(panel_icon)
+			tray.connect("popup_menu", self.__menu_activate) 
+			tray.set_visible(True)
 
-	def main(self):
+	def main(self, argv=None):
+        	if argv is None:
+                	argv = sys.argv
+        	try:
+			try:
+				opts, args = getopt.getopt(sys.argv[1:], "hdv", ["help", "daemon", "verbose"])
+			except getopt.GetoptError:
+                               	raise Usage()
+
+			self.__daemon = False
+			self.__verbose = False
+
+			for o, a in opts:
+				if o in ("-h", "--help"):
+					raise Usage()
+				elif o in ("-v", "--verbose"):
+					self.__verbose = True
+				elif o in ("-d", "--daemon"):
+					self.__daemon = True
+				else:
+					raise Usage()
+        	except Usage, err:
+                	print >> sys.stderr, err.msg
+                	return 2
 
 		try:
 			self.__bus = dbus.SessionBus()
@@ -204,7 +258,8 @@ class Mumbles(object):
 
 		self.__load_mumbles_plugins()
 
-		self.__create_panel_applet()
+		if not self.__daemon:
+			self.__create_panel_applet()
 
 		self.__loop = gobject.MainLoop()
 		if self.__verbose:
@@ -213,6 +268,5 @@ class Mumbles(object):
 
 
 if __name__ == '__main__':
-	mumbles = Mumbles(verbose=False)
+	mumbles = Mumbles()
 	sys.exit(mumbles.main())
-
