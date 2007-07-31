@@ -12,6 +12,8 @@ import dbus.service
 if getattr(dbus,'version',(0,0,0)) >= (0,41,0):
         import dbus.glib
 import cgi
+import gnomevfs
+import os
 
 
 class FirefoxMumbles(MumblesPlugin.MumblesPlugin):
@@ -22,12 +24,20 @@ class FirefoxMumbles(MumblesPlugin.MumblesPlugin):
 	dbus_interface = "org.mozilla.firefox.DBus"
 	dbus_object = "/org/mozilla/firefox/DBus/DownloadComplete"
 
+	__uri = None
 
-	def DownloadComplete(self, title, subject):
+	def DownloadComplete(self, title, uri):
+		self.__uri = uri
 		title = cgi.escape(title)
-		subject = cgi.escape(subject)
+		uri = cgi.escape(uri)
 		icon = self.plugin_dir+"/firefox/firefox/themes/firefox.png"
-		self.mumbles_notify.alert(title, subject, icon)
+		self.mumbles_notify.alert(title, uri, icon)
+
+	def onClick(self, widget, event):
+		if event.button == 3:
+			self.mumbles_notify.close()
+		else:
+			self.open_uri(self.__uri)
 
 
 	def connect_signals(self):
@@ -35,6 +45,8 @@ class FirefoxMumbles(MumblesPlugin.MumblesPlugin):
 
 	def create(self, mumbles_notify, session_bus):
 		self.mumbles_notify = mumbles_notify
+
+		self.mumbles_notify.addClickHandler(self.onClick)
 
 		try:
 			firefox_object = session_bus.get_object(self.get_dbus_name(), self.dbus_object)
@@ -44,3 +56,8 @@ class FirefoxMumbles(MumblesPlugin.MumblesPlugin):
 			return True
 		except:
 			return False
+
+	def open_uri(self, uri):
+		mime_type = gnomevfs.get_mime_type(uri)
+		application = gnomevfs.mime_get_default_application(mime_type)
+		os.system(application[2] + ' "' + uri + '" &') 
