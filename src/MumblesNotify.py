@@ -45,7 +45,6 @@ class MumblesNotifyOptions(OptionsHandler):
 		self.text_x_padding = 15
 		self.text_y_padding = 15
 
-
 class MumblesNotify(object):
 
 	def __init__(self, options = None):
@@ -66,22 +65,27 @@ class MumblesNotify(object):
 		# (to-do: window placement currently calculated assuming this is 10)
 		self.__spacing = 10
 
+		self.__click_handler = self.clicked 
+
+	def addClickHandler(self, handler):
+		self.__click_handler = handler
 
 	def clicked(self, widget, event):
-		pass
+		if event.button == 3:
+			self.close(widget.window);
 
 	def expose(self, widget, event, name, message, image):
 
 		cr = widget.window.cairo_create()
 
-        # restrict to window area
+        	# restrict to window area
 		cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
 		cr.clip()
 
 		if self.__alpha_available:
 			cr.set_source_rgba(0.0, 0.0, 0.0, 0.0)
 		else:
-			cr.set_source_rgb(0.5, 0.5, 0.5)
+			cr.set_source_rgb(0.0, 0.0, 0.0)
 
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
@@ -89,7 +93,7 @@ class MumblesNotify(object):
 		pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(THEMES_DIR, self.options.theme, 'bground.png'))
 			
 		if pixbuf:
-			cr.set_source_pixbuf(pixbuf, 1, 1)
+			cr.set_source_pixbuf(pixbuf, 0, 0)
 			cr.paint()
 		else:
 			cr.rectangle(0, 0, self.options.width, self.options.height)
@@ -134,25 +138,39 @@ class MumblesNotify(object):
 			colormap = screen.get_rgba_colormap()
 			self.__alpha_available = True
 		except:
-			colormap = screen.get_rgb_colormap()
-			self.__alpha_available = False
+			colormap = None
+
 		if colormap == None:
 			self.__alpha_available = False
-    
+			try:
+				colormap = screen.get_rgb_colormap()
+				self.__alpha_available = False
+			except:
+				colormap = None
+
 		# Now we have a colormap appropriate for the screen, use it
 		widget.set_colormap(colormap)
     
 		return False
+
+	def close(self, win):
+		self.close_alert(win)
 	
 	def close_alert(self, win):
-
-		win.destroy()
-
-		# decrease number of active windows
-		self.__n_active -= 1
+		# if time out was triggered, destroy the gtk.Window
+		# otherwise, handling event call back from gtk.gdk.Window, so temporarily hide it
+		try:
+			# decrease number of active windows if it's still visible
+			if win.window.is_visible():
+				self.__n_active -= 1
+			win.window.destroy()
+		except:
+			# decrease number of active windows
+			self.__n_active -= 1
+			win.hide()
 
 		# if number of active windows is back to 0, reset starting point
-		if not self.__n_active:
+		if self.__n_active == 0:
 			self.__n_index = 0
 
     
@@ -166,7 +184,7 @@ class MumblesNotify(object):
 		win.connect('delete-event', gtk.main_quit)
 		win.connect('expose-event', self.expose, name, message, image)
 		win.connect('screen-changed', self.screen_changed)
-		win.connect('button-press-event', self.clicked)
+		win.connect('button-press-event', self.__click_handler)
 
 		win.set_app_paintable(True)
 		win.set_decorated(False)
@@ -175,11 +193,11 @@ class MumblesNotify(object):
 		win.set_accept_focus(False)
 		win.set_keep_above(True)
 		win.stick()
-    
+
 		# initialize for the current display
 		self.screen_changed(win)
 		win.resize(self.options.width, self.options.height)
-		
+
 		# adjust window position by direction and placement
 		# preferences and how many notifications are active
 		if int(self.options.get_option('mumbles', 'notification_direction')) == NOTIFY_DIRECTION_DOWN:
@@ -193,14 +211,14 @@ class MumblesNotify(object):
 			new_x = self.__spacing 
 		win.move(new_x, new_y)
 
-		# show window for a defined about of time
-		source_id = gobject.timeout_add(int(self.options.get_option('mumbles', 'notification_duration'))*1000, self.close_alert, win)
-
 		# increase number of active notifications
 		self.__n_index += 1
 		self.__n_active += 1
 
+		# show window for a defined about of time
+		source_id = gobject.timeout_add(int(self.options.get_option('mumbles', 'notification_duration'))*1000, self.close_alert, win)
+
 		# finally show (and trigger the expose event)
 		win.show_all()
-    
+
 		return True
