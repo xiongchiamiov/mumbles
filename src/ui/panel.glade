@@ -48,7 +48,7 @@
 	<widget class="GtkAboutDialog" id="mumbles_about">
 		<property name="visible">False</property>
 		<property name="destroy_with_parent">True</property>
-		<property name="name" translatable="yes">mumbles</property>
+		<property name="name" translatable="yes">mumbles 0.4</property>
 		<property name="comments" translatable="yes">Plugin Based Notification System</property>
 		<property name="website">http://www.mumbles-project.com</property>
 		<property name="authors">dot_j &lt;dot_j@mumbles-project.org&gt;</property>

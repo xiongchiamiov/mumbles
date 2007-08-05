@@ -6,13 +6,20 @@
 # Generic Mumbles Example
 #
 # usage: mumbles-send.py title content
+#
+# python script to do the same as:
+#
+# dbus-send --type=signal --dest=org.mumblesproject.Mumbles /org/mumblesproject/Mumbles org.mumblesproject.Mumbles.Notify string:'subject' string:'content'
+#
 #------------------------------------------------------------------------
 
 import sys
 import getopt
 import dbus
-
+import dbus.service
+from dbus.mainloop.glib import DBusGMainLoop
 from MumblesGlobals import *
+from MumblesDBus import *
 
 class Usage(Exception):
 	def __init__(self, msg=None):
@@ -33,9 +40,10 @@ def main(argv=None):
 		print >>sys.stderr, err.msg
 		return 2
 
-	bus = dbus.SessionBus()
-	obj = bus.get_object(MUMBLES_DBUS_NAME,MUMBLES_DBUS_OBJECT)
-	sender = dbus.Interface(obj,MUMBLES_DBUS_NAME)
+	dbus_loop = DBusGMainLoop()
+	name = dbus.service.BusName (MUMBLES_DBUS_INTERFACE, bus=dbus.SessionBus(mainloop=dbus_loop))
+
+	sender = MumblesDBus(name)
 
 	content = ''
 	if len(args) > 1:

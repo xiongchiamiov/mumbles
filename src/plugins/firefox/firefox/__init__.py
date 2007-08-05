@@ -6,56 +6,41 @@
 #
 #------------------------------------------------------------------------
 
-import MumblesPlugin
+from MumblesPlugin import *
 import dbus
-import dbus.service
-if getattr(dbus,'version',(0,0,0)) >= (0,41,0):
-        import dbus.glib
 import cgi
 import gnomevfs
 import os
 
 
-class FirefoxMumbles(MumblesPlugin.MumblesPlugin):
+class FirefoxMumbles(MumblesPlugin):
 
-	__name__ = 'FirefoxMumbles'
-	__dbus_name__ = "org.mozilla.firefox.DBus"
-
+	plugin_name = "FirefoxMumbles"
 	dbus_interface = "org.mozilla.firefox.DBus"
-	dbus_object = "/org/mozilla/firefox/DBus/DownloadComplete"
+	dbus_path = "/org/mozilla/firefox/DBus"
 
 	__uri = None
+
+	def __init__(self, mumbles_notify, session_bus):
+		self.signal_config = {
+			"DownloadComplete": self.DownloadComplete
+		}
+
+		MumblesPlugin.__init__(self, mumbles_notify, session_bus)
+		self.addClickHandler(self.onClick)
 
 	def DownloadComplete(self, title, uri):
 		self.__uri = uri
 		title = cgi.escape(title)
-		uri = cgi.escape(uri)
+		uri = cgi.escape(os.path.basename(uri))
 		icon = self.plugin_dir+"/firefox/firefox/themes/firefox.png"
 		self.mumbles_notify.alert(title, uri, icon)
 
 	def onClick(self, widget, event):
 		if event.button == 3:
-			self.mumbles_notify.close()
+			self.mumbles_notify.close(widget.window)
 		else:
 			self.open_uri(self.__uri)
-
-
-	def connect_signals(self):
-		self.interface.connect_to_signal("DownloadComplete", self.DownloadComplete)
-
-	def create(self, mumbles_notify, session_bus):
-		self.mumbles_notify = mumbles_notify
-
-		self.mumbles_notify.addClickHandler(self.onClick)
-
-		try:
-			firefox_object = session_bus.get_object(self.get_dbus_name(), self.dbus_object)
-			self.interface = dbus.Interface(firefox_object, self.dbus_interface)
-
-			self.connect_signals()
-			return True
-		except:
-			return False
 
 	def open_uri(self, uri):
 		mime_type = gnomevfs.get_mime_type(uri)

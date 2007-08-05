@@ -48,28 +48,11 @@ class Mumbles(object):
 		self.__bus = None
 		self.__mumbles_notify = None
 		self.__plugins = {}
-		self.__available_plugins = {}
 		self.__panel_glade = PANEL_GLADE_FILE
 		self.__preferences_glade = PREFERENCES_GLADE_FILE
 		self.__options = None
 		self.__about = None
 		self.__preferences = None
-
-	def __on_NameOwnerChanged(self, name, old_owner, new_owner):
-		if name in self.__available_plugins and new_owner:
-
-			if self.__verbose:
-				print "NameOwnerChanged: %s" %(name)
-
-			plugin = self.__plugins.get(name)
-
-			try:
-				plugin.create(self.__mumbles_notify, self.__bus)
-				if self.__verbose:
-					print "Successfully loaded %s plugin" %(plugin.get_name())
-			except:
-				if self.__verbose:
-					print "Warning: Unable to load plugin for %s" %(name)
 
 	# return True when delete-event is fired to prevent
 	# window from being destroyed
@@ -150,36 +133,29 @@ class Mumbles(object):
 
 	def __load_mumbles_plugins(self):
 
-		try:
-			pkg_resources.working_set.add_entry(PLUGIN_DIR)
-			pkg_env = pkg_resources.Environment([PLUGIN_DIR])
+		#try:
+		pkg_resources.working_set.add_entry(PLUGIN_DIR)
+		pkg_env = pkg_resources.Environment([PLUGIN_DIR])
 
-			for name in pkg_env:
-				egg = pkg_env[name][0]
-				egg.activate()
-				for name in egg.get_entry_map(ENTRY_POINT):
-					entry_point = egg.get_entry_info(ENTRY_POINT, name)
-					plugin_cls = entry_point.load()
-					plugin = plugin_cls()
-					self.__plugins[plugin.get_dbus_name()] = plugin
+		for name in pkg_env:
+			egg = pkg_env[name][0]
+			egg.activate()
+			for name in egg.get_entry_map(ENTRY_POINT):
+				entry_point = egg.get_entry_info(ENTRY_POINT, name)
+				plugin_cls = entry_point.load()
 
-			for plugin_dbus_name, plugin in self.__plugins.items():
+				#try:
+				plugin = plugin_cls(self.__mumbles_notify, self.__bus)
+				self.__plugins[plugin.get_name()] = plugin
 
-				# keep a list of all available plugins
-				self.__available_plugins[plugin_dbus_name] = True
-
-				# load plugins that have running services
-				if plugin_dbus_name in self.__dbus_iface.ListNames():
-					try:
-						plugin.create(self.__mumbles_notify, self.__bus)
-						if self.__verbose:
-							print "Successfully loaded %s plugin" %(plugin.get_name())
-					except:
-						if self.__verbose:
-							print "Warning: Unable to load plugin for %s" %(plugin_dbus_name)
-		except:
-			if self.__verbose:
-				print "Error: Unable to load plugins"
+				if self.__verbose:
+					print "Successfully loaded %s plugin" %(plugin.get_name())
+				#except:
+					#if self.__verbose:
+						#print "Warning: Unable to load plugin for %s" %(plugin_dbus_name)
+		#except:
+			#if self.__verbose:
+				#print "Error: Unable to load plugins"
 
 
 	def __get_widget_by_name(self, glade_file, name, signals=None):
@@ -240,7 +216,6 @@ class Mumbles(object):
 		# create callback to load plugin when its service is started
 		dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
 		self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
-		self.__dbus_iface.connect_to_signal("NameOwnerChanged", self.__on_NameOwnerChanged)
 
 		self.__options = MumblesOptions()
 		if os.path.isfile(self.__options.filename):
@@ -254,7 +229,7 @@ class Mumbles(object):
 		self.__mumbles_notify = MumblesNotify(self.__options)
 
 		name = dbus.service.BusName(MUMBLES_DBUS_NAME,bus=self.__bus)
-		obj = MumblesDBus(name, self.__mumbles_notify)
+		obj = MumblesDBus(name)
 
 		self.__load_mumbles_plugins()
 

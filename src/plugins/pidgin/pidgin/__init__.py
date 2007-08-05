@@ -6,21 +6,26 @@
 #
 #------------------------------------------------------------------------
 
-import MumblesPlugin
+from MumblesPlugin import *
 import dbus
-import dbus.service
-if getattr(dbus,'version',(0,0,0)) >= (0,41,0):
-        import dbus.glib
 import re
 
+class PidginMumbles(MumblesPlugin):
 
-class PidginMumbles(MumblesPlugin.MumblesPlugin):
-
-	__name__ = 'PidginMumbles'
-	__dbus_name__ = "im.pidgin.purple.PurpleService"
-
+	plugin_name = "PidginMumbles"
 	dbus_interface = "im.pidgin.purple.PurpleInterface"
-	dbus_object = "/im/pidgin/purple/PurpleObject"
+	dbus_path = "/im/pidgin/purple/PurpleObject"
+
+	dbus_name = "im.pidgin.purple.PurpleService"
+	pidgin_interface = None
+
+	def __init__(self, mumbles_notify, session_bus):
+		self.signal_config = {
+			"ReceivedImMsg": self.ReceivedImMsg,
+			"ReceivedChatMsg": self.ReceivedChatMsg
+		}
+
+		MumblesPlugin.__init__(self, mumbles_notify, session_bus)
 
 
 	def ReceivedImMsg(self, account, name, message, conversation, flags):
@@ -28,42 +33,36 @@ class PidginMumbles(MumblesPlugin.MumblesPlugin):
 		message = self.striphtml(message)
 		icon = 0
 
-		buddy = self.interface.PurpleFindBuddy(account, name)
+		if not self.pidgin_interface:
+			pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+			self.pidgin_interface = dbus.Interface(pidgin_object, self.dbus_interface)
+
+		buddy = self.pidgin_interface.PurpleFindBuddy(account, name)
 		if buddy != 0:
-			name = self.interface.PurpleBuddyGetAlias(buddy)
+			name = self.pidgin_interface.PurpleBuddyGetAlias(buddy)
 
 		icon = self.plugin_dir+"/pidgin/pidgin/themes/pidgin.png"
 		self.mumbles_notify.alert(name, message, icon)
 
 
 	def ReceivedChatMsg(self, account, name, message, conversation, flags):
-		message = self.striphtml(message)
-        	chatroom_name = self.interface.PurpleConversationGetTitle(conversation)
-        	chat_data = self.interface.PurpleConversationGetChatData(conversation)
 
-        	chat_nick = self.interface.PurpleConvChatGetNick(chat_data)
+		message = self.striphtml(message)
+
+		if not self.pidgin_interface:
+			pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+			self.pidgin_interface = dbus.Interface(pidgin_object, self.dbus_interface)
+
+        	chatroom_name = self.pidgin_interface.PurpleConversationGetTitle(conversation)
+        	chat_data = self.pidgin_interface.PurpleConversationGetChatData(conversation)
+
+        	chat_nick = self.pidgin_interface.PurpleConvChatGetNick(chat_data)
 
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
 			icon = self.plugin_dir+"/pidgin/pidgin/themes/irc.png"
 			self.mumbles_notify.alert(name, message, icon)
 
-
-	def connect_signals(self):
-		self.interface.connect_to_signal("ReceivedImMsg", self.ReceivedImMsg)
-		self.interface.connect_to_signal("ReceivedChatMsg", self.ReceivedChatMsg)
-
-	def create(self, mumbles_notify, session_bus):
-		self.mumbles_notify = mumbles_notify
-
-		try:
-			pidgin_object = session_bus.get_object(self.get_dbus_name(), self.dbus_object)
-			self.interface = dbus.Interface(pidgin_object, self.dbus_interface)
-
-			self.connect_signals()
-			return True
-		except:
-			return False
 
 	def striphtml(self, message):
 		return re.compile('<[^>]+>').sub(' ',message)

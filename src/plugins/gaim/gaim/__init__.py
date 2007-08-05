@@ -6,63 +6,63 @@
 #
 #------------------------------------------------------------------------
 
-import MumblesPlugin
+from MumblesPlugin import *
 import dbus
-import dbus.service
-if getattr(dbus,'version',(0,0,0)) >= (0,41,0):
-        import dbus.glib
 import re
 
+class GaimMumbles(MumblesPlugin):
 
-class GaimMumbles(MumblesPlugin.MumblesPlugin):
-
-	__name__ = 'GaimMumbles'
-	__dbus_name__ = "net.sf.gaim.GaimService"
-
+	plugin_name = "GaimMumbles"
 	dbus_interface = "net.sf.gaim.GaimInterface"
-	dbus_object = "/net/sf/gaim/GaimObject"
+	dbus_path = "/net/sf/gaim/GaimObject"
+
+	dbus_name = "net.sf.gaim.GaimService"
+	gaim_interface = None
+
+	def __init__(self, mumbles_notify, session_bus):
+		self.signal_config = {
+			"ReceivedImMsg": self.ReceivedImMsg,
+			"ReceivedChatMsg": self.ReceivedChatMsg
+		}
+
+		MumblesPlugin.__init__(self, mumbles_notify, session_bus)
 
 
 	def ReceivedImMsg(self, account, name, message, conversation, flags):
+
 		message = self.striphtml(message)
 		icon = 0
 
-		buddy = self.interface.GaimFindBuddy(account, name)
+		if not self.gaim_interface:
+			gaim_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+			self.gaim_interface = dbus.Interface(gaim_object, self.dbus_interface)
+
+		buddy = self.gaim_interface.GaimFindBuddy(account, name)
 		if buddy != 0:
-			name = self.interface.GaimBuddyGetAlias(buddy)
+			name = self.gaim_interface.GaimBuddyGetAlias(buddy)
 
 		icon = self.plugin_dir+"/gaim/gaim/themes/gaim.png"
 		self.mumbles_notify.alert(name, message, icon)
 
 
 	def ReceivedChatMsg(self, account, name, message, conversation, flags):
-		message = self.striphtml(message)
-        	chatroom_name = self.interface.GaimConversationGetTitle(conversation)
-        	chat_data = self.interface.GaimConversationGetChatData(conversation)
 
-        	chat_nick = self.interface.GaimConvChatGetNick(chat_data)
+		message = self.striphtml(message)
+
+		if not self.gaim_interface:
+			gaim_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+			self.gaim_interface = dbus.Interface(gaim_object, self.dbus_interface)
+
+        	chatroom_name = self.gaim_interface.GaimConversationGetTitle(conversation)
+        	chat_data = self.gaim_interface.GaimConversationGetChatData(conversation)
+
+        	chat_nick = self.gaim_interface.GaimConvChatGetNick(chat_data)
 
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
 			icon = self.plugin_dir+"/gaim/gaim/themes/irc.png"
 			self.mumbles_notify.alert(name, message, icon)
 
-
-	def connect_signals(self):
-		self.interface.connect_to_signal("ReceivedImMsg", self.ReceivedImMsg)
-		self.interface.connect_to_signal("ReceivedChatMsg", self.ReceivedChatMsg)
-
-	def create(self, mumbles_notify, session_bus):
-		self.mumbles_notify = mumbles_notify
-
-		try:
-			gaim_object = session_bus.get_object(self.get_dbus_name(), self.dbus_object)
-			self.interface = dbus.Interface(gaim_object, self.dbus_interface)
-
-			self.connect_signals()
-			return True
-		except:
-			return False
 
 	def striphtml(self, message):
 		return re.compile('<[^>]+>').sub(' ',message)

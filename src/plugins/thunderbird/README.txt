@@ -8,4 +8,4 @@
 
 Plugin requires the Thunderbird DBus Notification Extension available from:
 
-http://mumbles-project.org/extensions
+http://mumbles-project.org/extras
