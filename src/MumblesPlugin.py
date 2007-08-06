@@ -34,4 +34,4 @@ class MumblesPlugin(object):
 			return self.plugin_name
 
 		def addClickHandler(self, handler):
-			self.mumbles_notify.addClickHandler(handler)
+			self.mumbles_notify.addClickHandler(self.plugin_name, handler)

@@ -42,7 +42,7 @@ class GaimMumbles(MumblesPlugin):
 			name = self.gaim_interface.GaimBuddyGetAlias(buddy)
 
 		icon = self.plugin_dir+"/gaim/gaim/themes/gaim.png"
-		self.mumbles_notify.alert(name, message, icon)
+		self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 
 	def ReceivedChatMsg(self, account, name, message, conversation, flags):
@@ -61,7 +61,7 @@ class GaimMumbles(MumblesPlugin):
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
 			icon = self.plugin_dir+"/gaim/gaim/themes/irc.png"
-			self.mumbles_notify.alert(name, message, icon)
+			self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 
 	def striphtml(self, message):

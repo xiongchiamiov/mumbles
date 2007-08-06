@@ -34,9 +34,9 @@ class FirefoxMumbles(MumblesPlugin):
 		title = cgi.escape(title)
 		uri = cgi.escape(os.path.basename(uri))
 		icon = self.plugin_dir+"/firefox/firefox/themes/firefox.png"
-		self.mumbles_notify.alert(title, uri, icon)
+		self.mumbles_notify.alert(self.plugin_name, title, uri, icon)
 
-	def onClick(self, widget, event):
+	def onClick(self, widget, event, plugin_name):
 		if event.button == 3:
 			self.mumbles_notify.close(widget.window)
 		else:

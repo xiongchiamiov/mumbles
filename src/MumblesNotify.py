@@ -65,14 +65,17 @@ class MumblesNotify(object):
 		# (to-do: window placement currently calculated assuming this is 10)
 		self.__spacing = 10
 
-		self.__click_handler = self.clicked 
+		self.__click_handlers = {}
 
-	def addClickHandler(self, handler):
-		self.__click_handler = handler
+	def addClickHandler(self, plugin_name, click_handler):
+		self.__click_handlers[plugin_name] = click_handler
 
-	def clicked(self, widget, event):
-		if event.button == 3:
-			self.close(widget.window);
+	def clicked(self, widget, event, plugin_name = None):
+		try:
+			self.__click_handlers[plugin_name](widget, event, plugin_name)
+		except:
+			if event.button == 3:
+				self.close(widget.window);
 
 	def expose(self, widget, event, name, message, image):
 
@@ -174,7 +177,7 @@ class MumblesNotify(object):
 			self.__n_index = 0
 
     
-	def alert(self, name, message, image=None):
+	def alert(self, plugin_name, name, message, image=None):
 		# setup window
 		win = gtk.Window(gtk.WINDOW_TOPLEVEL)
 
@@ -184,7 +187,11 @@ class MumblesNotify(object):
 		win.connect('delete-event', gtk.main_quit)
 		win.connect('expose-event', self.expose, name, message, image)
 		win.connect('screen-changed', self.screen_changed)
-		win.connect('button-press-event', self.__click_handler)
+
+		try:
+			win.connect('button-press-event', self.__click_handlers[plugin_name], plugin_name)
+		except:
+			win.connect('button-press-event', self.clicked)
 
 		win.set_app_paintable(True)
 		win.set_decorated(False)

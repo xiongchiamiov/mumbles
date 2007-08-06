@@ -43,5 +43,5 @@ class RhythmboxMumbles(MumblesPlugin):
 		message = escape("%d: %s" %(metadata["track-number"],metadata["title"]))
 
 		icon = self.plugin_dir+"/rhythmbox/rhythmbox/themes/rhythmbox.xpm"
-		self.mumbles_notify.alert(header, message, icon)
+		self.mumbles_notify.alert(self.plugin_name, header, message, icon)
 

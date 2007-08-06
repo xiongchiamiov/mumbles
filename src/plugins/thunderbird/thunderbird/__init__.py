@@ -29,5 +29,5 @@ class ThunderbirdMumbles(MumblesPlugin):
 		subject_clean = cgi.escape(subject)
 		icon = self.plugin_dir+"/thunderbird/thunderbird/themes/thunderbird.png"
 
-		self.mumbles_notify.alert(from_addr_clean, subject_clean, icon)
+		self.mumbles_notify.alert(self.plugin_name, from_addr_clean, subject_clean, icon)
 

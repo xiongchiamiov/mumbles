@@ -42,7 +42,7 @@ class PidginMumbles(MumblesPlugin):
 			name = self.pidgin_interface.PurpleBuddyGetAlias(buddy)
 
 		icon = self.plugin_dir+"/pidgin/pidgin/themes/pidgin.png"
-		self.mumbles_notify.alert(name, message, icon)
+		self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 
 	def ReceivedChatMsg(self, account, name, message, conversation, flags):
@@ -61,7 +61,7 @@ class PidginMumbles(MumblesPlugin):
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
 			icon = self.plugin_dir+"/pidgin/pidgin/themes/irc.png"
-			self.mumbles_notify.alert(name, message, icon)
+			self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 
 	def striphtml(self, message):

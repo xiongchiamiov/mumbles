@@ -133,29 +133,29 @@ class Mumbles(object):
 
 	def __load_mumbles_plugins(self):
 
-		#try:
-		pkg_resources.working_set.add_entry(PLUGIN_DIR)
-		pkg_env = pkg_resources.Environment([PLUGIN_DIR])
+		try:
+			pkg_resources.working_set.add_entry(PLUGIN_DIR)
+			pkg_env = pkg_resources.Environment([PLUGIN_DIR])
 
-		for name in pkg_env:
-			egg = pkg_env[name][0]
-			egg.activate()
-			for name in egg.get_entry_map(ENTRY_POINT):
-				entry_point = egg.get_entry_info(ENTRY_POINT, name)
-				plugin_cls = entry_point.load()
+			for name in pkg_env:
+				egg = pkg_env[name][0]
+				egg.activate()
+				for name in egg.get_entry_map(ENTRY_POINT):
+					entry_point = egg.get_entry_info(ENTRY_POINT, name)
+					plugin_cls = entry_point.load()
 
-				#try:
-				plugin = plugin_cls(self.__mumbles_notify, self.__bus)
-				self.__plugins[plugin.get_name()] = plugin
+					try:
+						plugin = plugin_cls(self.__mumbles_notify, self.__bus)
+						self.__plugins[plugin.get_name()] = plugin
 
-				if self.__verbose:
-					print "Successfully loaded %s plugin" %(plugin.get_name())
-				#except:
-					#if self.__verbose:
-						#print "Warning: Unable to load plugin for %s" %(plugin_dbus_name)
-		#except:
-			#if self.__verbose:
-				#print "Error: Unable to load plugins"
+						if self.__verbose:
+							print "Successfully loaded %s plugin" %(plugin.get_name())
+					except:
+						if self.__verbose:
+							print "Warning: Unable to load plugin for %s" %(name)
+		except:
+			if self.__verbose:
+				print "Error: Unable to load plugins"
 
 
 	def __get_widget_by_name(self, glade_file, name, signals=None):

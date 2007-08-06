@@ -24,5 +24,5 @@ class GenericMumbles(MumblesPlugin):
 
 	def Notify(self, name, message):
 		icon = None
-		self.mumbles_notify.alert(name, message, icon)
+		self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
