@@ -53,6 +53,7 @@ class Mumbles(object):
 		self.__options = None
 		self.__about = None
 		self.__preferences = None
+		self.__tray = None
 
 	# return True when delete-event is fired to prevent
 	# window from being destroyed
@@ -171,15 +172,15 @@ class Mumbles(object):
 			}
 			eventbox_widget = self.__get_widget_by_name(self.__panel_glade, 'mumbles_eventbox', signals)
 
-			tray = egg.trayicon.TrayIcon("Mumbles")
-			tray.add(eventbox_widget)
-			tray.show_all()
+			self.__tray = egg.trayicon.TrayIcon("Mumbles")
+			self.__tray.add(eventbox_widget)
+			self.__tray.show_all()
 		else:
-			tray = gtk.StatusIcon()
+			self.__tray = gtk.StatusIcon()
 			panel_icon = self.__get_widget_by_name(self.__panel_glade, 'panel_icon_image').get_pixbuf()
-			tray.set_from_pixbuf(panel_icon)
-			tray.connect("popup_menu", self.__menu_activate) 
-			tray.set_visible(True)
+			self.__tray.set_from_pixbuf(panel_icon)
+			self.__tray.connect("popup_menu", self.__menu_activate) 
+			self.__tray.set_visible(True)
 
 	def main(self, argv=None):
         	if argv is None:
