@@ -207,7 +207,7 @@ class Mumbles(object):
 			try:
 				opts, args = getopt.getopt(
 					sys.argv[1:],
-					"hdvg:px",
+					"hdvgpx",
 					["help", "daemon", "verbose", "enable-growl-network", "password", "disable-growl-network"])
 			except getopt.GetoptError:
                                	raise Usage()
