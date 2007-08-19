@@ -23,27 +23,32 @@ class MumblesNotifyOptions(OptionsHandler):
 	def __init__(self):
 		OptionsHandler.__init__(self)
 
-		# dimenstions of the notification area
-		self.width = 250
-		self.height = 80
+		self.options['mumbles-notifications'] = {
 
-		# theme directory
-		self.theme = 'default'
+			# dimenstions of the notification area
+			'width' : 250,
+			'height' : 80,
 
-		# icon options
-		self.icon_x_pos = 10
-		self.icon_y_pos = 25
+			# theme directory
+			'theme' : 'default',
 
-		# text formatting
-		self.text_font = 'Sans'
-		self.text_title_color = '#fff'
-		self.text_title_size = 10
-		self.text_message_color = '#fff'
-		self.text_message_size = 8
-		self.text_x_pos = 38
-		self.text_y_pos = 8
-		self.text_x_padding = 15
-		self.text_y_padding = 15
+			# icon options
+			'icon_x_pos' : 10,
+			'icon_y_pos' : 25,
+
+			# text formatting
+			'text_font' : 'Sans',
+			'text_title_color' : '#fff',
+			'text_title_size' : 10,
+			'text_message_color' : '#fff',
+			'text_message_size' : 8,
+			'text_x_pos' : 38,
+			'text_y_pos' : 8,
+			'text_x_padding' : 15,
+			'text_y_padding' : 15
+		}
+
+
 
 class MumblesNotify(object):
 
@@ -93,13 +98,21 @@ class MumblesNotify(object):
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		pixbuf = gtk.gdk.pixbuf_new_from_file(os.path.join(THEMES_DIR, self.options.theme, 'bground.png'))
+		background_image = os.path.join(THEMES_DIR, self.options.get_option('mumbles-notifications', 'theme'), 'bground.png')
+		default_background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
+
+		if os.path.exists(background_image):
+			pixbuf = gtk.gdk.pixbuf_new_from_file(background_image)
+		elif os.path.exists(default_background_image):
+			pixbuf = gtk.gdk.pixbuf_new_from_file(default_background_image)
+		else:
+			pixbuf = None
 			
 		if pixbuf:
 			cr.set_source_pixbuf(pixbuf, 0, 0)
 			cr.paint()
 		else:
-			cr.rectangle(0, 0, self.options.width, self.options.height)
+			cr.rectangle(0, 0, self.options.get_option('mumbles-notifications', 'width'), self.options.get_option('mumbles-notifications', 'height'))
 			cr.fill()
 
 
@@ -110,21 +123,21 @@ class MumblesNotify(object):
 		plugin_image = gtk.gdk.pixbuf_new_from_file(image)
 		if plugin_image:
 			plugin_image_width = plugin_image.get_width()
-			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.icon_x_pos, self.options.icon_y_pos)
+			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option('mumbles-notifications', 'icon_x_pos'), self.options.get_option('mumbles-notifications', 'icon_y_pos'))
 
 
 		# add text
-		cr.rectangle(0, 0, self.options.width, self.options.height - self.options.text_y_padding)
+		cr.rectangle(0, 0, self.options.get_option('mumbles-notifications', 'width'), self.options.get_option('mumbles-notifications', 'height') - self.options.get_option('mumbles-notifications', 'text_y_padding'))
 		cr.clip()
-		cr.translate(self.options.text_x_pos, self.options.text_y_pos)
+		cr.translate(self.options.get_option('mumbles-notifications', 'text_x_pos'), self.options.get_option('mumbles-notifications', 'text_y_pos'))
 
 		p_layout = cr.create_layout()
 		p_layout.set_wrap(pango.WRAP_WORD)
-		p_layout.set_width((self.options.width - plugin_image_width - self.options.text_x_padding) * pango.SCALE)
+		p_layout.set_width((self.options.get_option('mumbles-notifications', 'width') - plugin_image_width - self.options.get_option('mumbles-notifications', 'text_x_padding')) * pango.SCALE)
 
-		title = '<span foreground="'+self.options.text_title_color+'" font_desc="'+self.options.text_font+' '+`self.options.text_title_size`+'"><b>'+name+'</b></span>\n'
+		title = '<span foreground="'+self.options.get_option('mumbles-notifications', 'text_title_color')+'" font_desc="'+self.options.get_option('mumbles-notifications', 'text_font')+' '+`self.options.get_option('mumbles-notifications', 'text_title_size')`+'"><b>'+name+'</b></span>\n'
 
-		message = '<span foreground="'+self.options.text_message_color+'" font_desc="'+self.options.text_font+' '+`self.options.text_message_size`+'"><b>'+message+'</b></span>'
+		message = '<span foreground="'+self.options.get_option('mumbles-notifications', 'text_message_color')+'" font_desc="'+self.options.get_option('mumbles-notifications', 'text_font')+' '+`self.options.get_option('mumbles-notifications', 'text_message_size')`+'"><b>'+message+'</b></span>'
 
 		p_layout.set_markup(title+message)
 
@@ -203,17 +216,18 @@ class MumblesNotify(object):
 
 		# initialize for the current display
 		self.screen_changed(win)
-		win.resize(self.options.width, self.options.height)
+		win.resize( self.options.get_option('mumbles-notifications', 'width'),
+			self.options.get_option('mumbles-notifications', 'height'))
 
 		# adjust window position by direction and placement
 		# preferences and how many notifications are active
-		if int(self.options.get_option('mumbles', 'notification_direction')) == NOTIFY_DIRECTION_DOWN:
-			new_y = ( (self.options.height*(self.__n_index)) + self.__spacing )+ (self.__spacing*(self.__n_index+1))
+		if int(self.options.get_option('mumbles-notifications', 'notification_direction')) == NOTIFY_DIRECTION_DOWN:
+			new_y = ((self.options.get_option('mumbles-notifications', 'height')*(self.__n_index)) + self.__spacing )+ (self.__spacing*(self.__n_index+1))
 		else:
-			new_y = gtk.gdk.screen_height() - ((self.options.height*(self.__n_index+1) + self.__spacing) + (self.__spacing*(self.__n_index+2)))
+			new_y = gtk.gdk.screen_height() - ((self.options.get_option('mumbles-noifications', 'height')*(self.__n_index+1) + self.__spacing) + (self.__spacing*(self.__n_index+2)))
 
-		if int(self.options.get_option('mumbles','notification_placement')) == NOTIFY_PLACEMENT_RIGHT:
-			new_x = (gtk.gdk.screen_width()- self.options.width-self.__spacing)
+		if int(self.options.get_option('mumbles-notifications','notification_placement')) == NOTIFY_PLACEMENT_RIGHT:
+			new_x = (gtk.gdk.screen_width()-self.options.get_option('mumbles-notifications', 'width')-self.__spacing)
 		else:
 			new_x = self.__spacing 
 		win.move(new_x, new_y)
@@ -223,7 +237,7 @@ class MumblesNotify(object):
 		self.__n_active += 1
 
 		# show window for a defined about of time
-		source_id = gobject.timeout_add(int(self.options.get_option('mumbles', 'notification_duration'))*1000, self.close_alert, win)
+		source_id = gobject.timeout_add(int(self.options.get_option('mumbles-notifications', 'notification_duration'))*1000, self.close_alert, win)
 
 		# finally show (and trigger the expose event)
 		win.show_all()

@@ -11,8 +11,8 @@ import os
 import getopt 
 import sys
 import pkg_resources
-
 import gtk.glade
+import threading
 
 USE_EGG_TRAYICON = True 
 try:
@@ -29,18 +29,19 @@ import dbus
 import dbus.service
 if getattr(dbus,'version',(0,0,0)) >= (0,41,0):
 	import dbus.glib
+from getpass import getpass
 
 from OptionsHandler import *
-
 from MumblesGlobals import *
 from MumblesNotify import *
 from MumblesOptions import *
 from MumblesDBus import *
+from GrowlNetwork import *
 
 
 class Usage(Exception):
         def __init__(self, msg=None):
-                self.msg = 'Usage: Mumbles.py [-v] [-d]'
+                self.msg = 'Usage: Mumbles.py [-h] [-v] [-d] [-g|-x] [-p]'
 
 class Mumbles(object):
 
@@ -84,9 +85,9 @@ class Mumbles(object):
 	def __preferences_ok(self, widget):
 
 		# get updated settings
-		self.__options.set_option('mumbles', 'notification_placement', self.__preferences.get_widget('combo_screen_placement').get_active())
-		self.__options.set_option('mumbles', 'notification_direction', self.__preferences.get_widget('combo_direction').get_active())
-		self.__options.set_option('mumbles', 'notification_duration', self.__preferences.get_widget('spin_duration').get_value_as_int())
+		self.__options.set_option('mumbles-notifications', 'notification_placement', self.__preferences.get_widget('combo_screen_placement').get_active())
+		self.__options.set_option('mumbles-notifications', 'notification_direction', self.__preferences.get_widget('combo_direction').get_active())
+		self.__options.set_option('mumbles-notifications', 'notification_duration', self.__preferences.get_widget('spin_duration').get_value_as_int())
 		self.__options.save()
 
 		self.__preferences_close(None)
@@ -110,9 +111,9 @@ class Mumbles(object):
 		self.__preferences_window = self.__preferences.get_widget("mumbles_preferences")
 
 		# populate with existing settings (or defaults)
-		self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option('mumbles', 'notification_placement')))
-		self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option('mumbles', 'notification_direction')))
-		self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option('mumbles', 'notification_duration')))
+		self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option('mumbles-notifications', 'notification_placement')))
+		self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option('mumbles-notifications', 'notification_direction')))
+		self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option('mumbles-notifications', 'notification_duration')))
 
 
 	def __about_close(self, widget, event=None):
@@ -183,40 +184,8 @@ class Mumbles(object):
 			self.__tray.set_visible(True)
 
 	def main(self, argv=None):
-        	if argv is None:
-                	argv = sys.argv
-        	try:
-			try:
-				opts, args = getopt.getopt(sys.argv[1:], "hdv", ["help", "daemon", "verbose"])
-			except getopt.GetoptError:
-                               	raise Usage()
 
-			self.__daemon = False
-			self.__verbose = False
-
-			for o, a in opts:
-				if o in ("-h", "--help"):
-					raise Usage()
-				elif o in ("-v", "--verbose"):
-					self.__verbose = True
-				elif o in ("-d", "--daemon"):
-					self.__daemon = True
-				else:
-					raise Usage()
-        	except Usage, err:
-                	print >> sys.stderr, err.msg
-                	return 2
-
-		try:
-			self.__bus = dbus.SessionBus()
-		except:
-			if self.__verbose:
-				print "Error: DBus appears to not be running."
-			return False
-
-		# create callback to load plugin when its service is started
-		dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
-		self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
+		check_password = False;
 
 		self.__options = MumblesOptions()
 		if os.path.isfile(self.__options.filename):
@@ -227,6 +196,58 @@ class Mumbles(object):
 			# using defaults from MumblesOptions
 			self.__options.create_file(self.__options.options)
 
+		# convert boolean values to integers
+		self.__options.set_option('mumbles', 'verbosity', int(self.__options.get_option('mumbles', 'verbosity')))
+		self.__options.set_option('mumbles', 'daemon', int(self.__options.get_option('mumbles', 'daemon')))
+		self.__options.set_option('mumbles', 'growl_network_enabled', int(self.__options.get_option('mumbles', 'growl_network_enabled')))
+
+        	if argv is None:
+                	argv = sys.argv
+        	try:
+			try:
+				opts, args = getopt.getopt(
+					sys.argv[1:],
+					"hdvg:px",
+					["help", "daemon", "verbose", "enable-growl-network", "password", "disable-growl-network"])
+			except getopt.GetoptError:
+                               	raise Usage()
+
+			for o, a in opts:
+				if o in ("-h", "--help"):
+					raise Usage()
+				elif o in ("-v", "--verbose"):
+					self.__options.set_option('mumbles', 'verbose', True)
+				elif o in ("-d", "--daemon"):
+					self.__options.set_option('mumbles', 'daemon', True)
+				elif o in ("-g", "--enable-growl-network"):
+					self.__options.set_option('mumbles', 'growl_network_enabled', True)
+				elif o in ("-p", "--password"):
+					check_password = True;
+				elif o in ("-x", "--disable-growl-network"):
+					self.__options.set_option('mumbles', 'growl_network_enabled', False)
+				else:
+					raise Usage()
+        	except Usage, err:
+                	print >> sys.stderr, err.msg
+                	return 2
+
+		self.__verbose = False
+		if self.__options.get_option('mumbles', 'verbose'):
+			self.__verbose = True
+			self.__options.show_options()
+
+		try:
+			self.__bus = dbus.SessionBus()
+		except:
+			if self.__verbose:
+				print "Error: DBus appears to not be running."
+			return False
+
+
+		# create callback to load plugin when its service is started
+		dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
+		self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
+
 		self.__mumbles_notify = MumblesNotify(self.__options)
 
 		name = dbus.service.BusName(MUMBLES_DBUS_NAME,bus=self.__bus)
@@ -234,12 +255,29 @@ class Mumbles(object):
 
 		self.__load_mumbles_plugins()
 
-		if not self.__daemon:
+		if not self.__options.get_option('mumbles', 'daemon'):
 			self.__create_panel_applet()
+		elif self.__verbose:
+			print "Starting Mumbles in daemon mode"
 
 		self.__loop = gobject.MainLoop()
+		gobject.threads_init()
+
+		if self.__options.get_option('mumbles', 'growl_network_enabled'):
+			passwd = None
+			if check_password:
+				passwd = getpass()
+			# start growl network listener
+			if self.__verbose:
+				print "Starting Growl Network Support..."
+			growl_server = GrowlServer(('', GROWL_UDP_PORT), growlIncoming, passwd)
+			self.__growl_thread = threading.Thread(target = growl_server.serve_forever) 
+			self.__growl_thread.setDaemon(True)
+			self.__growl_thread.start()
+
 		if self.__verbose:
-			print "Listening..."
+			print "Mumbles is Listening..."
+
 		self.__loop.run()
 
 

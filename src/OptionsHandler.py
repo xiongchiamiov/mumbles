@@ -39,6 +39,12 @@ class OptionsHandler(object):
 				for option in self.__config_parser.options(section):
 					self.options[section][option] = self.__config_parser.get(section, option)
 
+	def show_options(self):
+		for section in self.options:
+			#for option in self.__config_parser.options(section):
+			for option in self.options[section]:
+				print "%s: %s = %s" %(section, option, self.options[section][option])
+
 	def get_option(self, section, option):
 		return self.options[section][option]
 
@@ -49,7 +55,8 @@ class OptionsHandler(object):
 		opts = options.options
 		for o in opts:
 			if o in self.options:
-				self.options[o] = [self.options[o], opts[0]]
+				for p in opts[o]:
+					self.options[o][p] = opts[o][p]
 			else:
 				self.options[o] = opts[o]
 

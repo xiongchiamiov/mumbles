@@ -13,12 +13,23 @@ class MumblesOptions(OptionsHandler):
 
 	def __init__(self):
 		OptionsHandler.__init__(self)
+		self.options = {}
 		self.options['mumbles'] = {
-			# placement and direction of notifications
-			'notification_placement' : NOTIFY_PLACEMENT_RIGHT,
-			'notification_direction' : NOTIFY_DIRECTION_DOWN,
+				# show/don't show debug messages 
+				'verbosity' : 0,
 
-			# how long to show the notifications (seconds)
-			'notification_duration' : 5
+				# run in deamon mode
+				'daemon' : 0,
+
+				# enable growl network handling
+				'growl_network_enabled' : 0,
+		}
+		self.options['mumbles-notifications'] = {
+				# placement and direction of notifications
+				'notification_placement' : NOTIFY_PLACEMENT_RIGHT,
+				'notification_direction' : NOTIFY_DIRECTION_DOWN,
+
+				# how long to show the notifications (seconds)
+				'notification_duration' : 5
 		}
 
