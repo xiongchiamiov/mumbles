@@ -232,7 +232,7 @@ class Mumbles(object):
                 	return 2
 
 		self.__verbose = False
-		if self.__options.get_option('mumbles', 'verbose'):
+		if int(self.__options.get_option('mumbles', 'verbose')):
 			self.__verbose = True
 			self.__options.show_options()
 
