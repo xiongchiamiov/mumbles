@@ -197,7 +197,7 @@ class Mumbles(object):
 			self.__options.create_file(self.__options.options)
 
 		# convert boolean values to integers
-		self.__options.set_option('mumbles', 'verbosity', int(self.__options.get_option('mumbles', 'verbosity')))
+		self.__options.set_option('mumbles', 'verbose', int(self.__options.get_option('mumbles', 'verbose')))
 		self.__options.set_option('mumbles', 'daemon', int(self.__options.get_option('mumbles', 'daemon')))
 		self.__options.set_option('mumbles', 'growl_network_enabled', int(self.__options.get_option('mumbles', 'growl_network_enabled')))
 
