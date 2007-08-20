@@ -15,6 +15,9 @@ import gtk
 import pygtk
 pygtk.require('2.0')
 
+import xml.dom.minidom
+from xml.dom.minidom import Node
+
 from MumblesGlobals import *
 from OptionsHandler import *
 
@@ -23,29 +26,64 @@ class MumblesNotifyOptions(OptionsHandler):
 	def __init__(self):
 		OptionsHandler.__init__(self)
 
+		self.options['mumbles-notifications'] = {
+			# placement and direction of notifications
+			'notification_placement' : NOTIFY_PLACEMENT_RIGHT,
+			'notification_direction' : NOTIFY_DIRECTION_DOWN,
+
+			# how long to show the notifications (seconds)
+			'notification_duration' : 5,
+
+			# theme directory
+			'theme' : 'default'
+		}
+
 		self.options['mumbles-theme'] = {
 
 			# dimenstions of the notification area
 			'width' : 250,
 			'height' : 80,
 
-			# theme directory
-			'theme' : 'default',
-
 			# icon options
 			'icon_x_pos' : 10,
 			'icon_y_pos' : 25,
 
 			# text formatting
-			'text_font' : 'Sans',
+			'text_title_font' : 'Sans',
 			'text_title_color' : '#fff',
 			'text_title_size' : 10,
+			'text_message_font' : 'Sans',
 			'text_message_color' : '#fff',
 			'text_message_size' : 8,
 			'text_x_pos' : 38,
 			'text_y_pos' : 8,
 			'text_x_padding' : 15,
 			'text_y_padding' : 15
+		}
+
+		self.xml_config_array = {
+			'width'  : ['width', 'int'],
+			'height' : ['height', 'int'],
+			'icon' : {
+				'x_pos' : ['icon_x_pos', 'int'],
+				'y_pos' : ['icon_y_pos', 'int']
+			},
+			'text' : {
+				'title' : {
+					'font'  : ['text_title_font', 'string'],
+					'color' : ['text_title_color', 'string'],
+					'size'  : ['text_title_size', 'int']
+				},
+				'message' : {
+					'font'  : ['text_message_font', 'string'],
+					'color' : ['text_message_color', 'string'],
+					'size'  : ['text_message_size', 'int']
+				},
+				'x_pos' : ['text_x_pos', 'int'],
+				'y_pos' : ['text_y_pos', 'int'],
+				'x_padding' : ['text_x_padding', 'int'],
+				'y_padding' : ['text_y_padding', 'int']
+			}
 		}
 
 
@@ -57,8 +95,18 @@ class MumblesNotify(object):
 		# get default notification options
 		self.options = MumblesNotifyOptions()
 
+		# if options were passed, update default options with those
 		if options:
 			self.options.add_options(options)
+
+		theme_name = self.options.get_option('mumbles-notifications', 'theme')
+		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+		print "%s - %s" %(theme_name, theme_xml)
+		self.add_options_from_config(theme_name, theme_xml)
+
+		print
+		self.options.show_options()
+		print
 
 		# keep track of how many notices deep we are
 		self.__n_index = 0
@@ -71,6 +119,45 @@ class MumblesNotify(object):
 		self.__spacing = 10
 
 		self.__click_handlers = {}
+
+	def process_xml_options(self, xml_config, xml_item):
+
+		for outerNodeName in xml_config:
+			for node in xml_item.getElementsByTagName(outerNodeName):
+				if node.nodeType == Node.ELEMENT_NODE:
+					if type(xml_config[node.nodeName]) is dict:
+						self.process_xml_options(xml_config[node.nodeName], node)
+					else:
+						if xml_config[node.nodeName][1] == 'int':
+							self.options.set_option('mumbles-theme', xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
+						else:
+							self.options.set_option('mumbles-theme', xml_config[node.nodeName][0], node.firstChild.nodeValue)
+
+
+	def add_options_from_config(self, theme_name, theme_xml):
+
+		# create xml document
+		if not os.path.exists(theme_xml):
+			raise Exception('"%s" theme config file not found: "%s".' %(theme_name, theme_xml))
+
+		try:
+			doc = xml.dom.minidom.parse(theme_xml)
+		except:
+			raise Exception('Invalid XML in "%s" theme config file: "%s".' %(theme_name,  theme_xml))
+
+		# get root node
+		root = doc.firstChild
+		if not root or root.nodeName != 'mumbles-theme':
+			raise Exception('Missing or invalid rootnode "mumbles-theme" in "%s" theme config file: "%s".' %(theme_name, theme_xml))
+
+		root_theme_name = root.getAttribute('name')
+		if not root_theme_name:
+			raise Exception('No name for theme defined in "%s".' %(theme_xml))
+		elif root_theme_name != theme_name:
+			raise Exception('Theme direcotry name "%s" does not match name defined in XML "%s".' %(theme_name, root_theme_name))
+
+		self.process_xml_options(self.options.xml_config_array, root)
+
 
 	def addClickHandler(self, plugin_name, click_handler):
 		self.__click_handlers[plugin_name] = click_handler
@@ -98,7 +185,7 @@ class MumblesNotify(object):
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		background_image = os.path.join(THEMES_DIR, self.options.get_option('mumbles-theme', 'theme'), 'bground.png')
+		background_image = os.path.join(THEMES_DIR, self.options.get_option('mumbles-notifications', 'theme'), 'bground.png')
 		default_background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
 
 		if os.path.exists(background_image):
@@ -135,9 +222,9 @@ class MumblesNotify(object):
 		p_layout.set_wrap(pango.WRAP_WORD)
 		p_layout.set_width((self.options.get_option('mumbles-theme', 'width') - plugin_image_width - self.options.get_option('mumbles-theme', 'text_x_padding')) * pango.SCALE)
 
-		title = '<span foreground="'+self.options.get_option('mumbles-theme', 'text_title_color')+'" font_desc="'+self.options.get_option('mumbles-theme', 'text_font')+' '+`self.options.get_option('mumbles-theme', 'text_title_size')`+'"><b>'+name+'</b></span>\n'
+		title = '<span foreground="'+self.options.get_option('mumbles-theme', 'text_title_color')+'" font_desc="'+self.options.get_option('mumbles-theme', 'text_title_font')+' '+`self.options.get_option('mumbles-theme', 'text_title_size')`+'"><b>'+name+'</b></span>\n'
 
-		message = '<span foreground="'+self.options.get_option('mumbles-theme', 'text_message_color')+'" font_desc="'+self.options.get_option('mumbles-theme', 'text_font')+' '+`self.options.get_option('mumbles-theme', 'text_message_size')`+'"><b>'+message+'</b></span>'
+		message = '<span foreground="'+self.options.get_option('mumbles-theme', 'text_message_color')+'" font_desc="'+self.options.get_option('mumbles-theme', 'text_message_font')+' '+`self.options.get_option('mumbles-theme', 'text_message_size')`+'"><b>'+message+'</b></span>'
 
 		p_layout.set_markup(title+message)
 

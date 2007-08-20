@@ -234,7 +234,6 @@ class Mumbles(object):
 		self.__verbose = False
 		if int(self.__options.get_option('mumbles', 'verbose')):
 			self.__verbose = True
-			self.__options.show_options()
 
 		try:
 			self.__bus = dbus.SessionBus()

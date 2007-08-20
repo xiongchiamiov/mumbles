@@ -30,6 +30,9 @@ class MumblesOptions(OptionsHandler):
 				'notification_direction' : NOTIFY_DIRECTION_DOWN,
 
 				# how long to show the notifications (seconds)
-				'notification_duration' : 5
+				'notification_duration' : 5,
+
+				# theme directory
+				'theme' : 'default'
 		}
 
