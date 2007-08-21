@@ -101,12 +101,7 @@ class MumblesNotify(object):
 
 		theme_name = self.options.get_option('mumbles-notifications', 'theme')
 		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
-		print "%s - %s" %(theme_name, theme_xml)
 		self.add_options_from_config(theme_name, theme_xml)
-
-		print
-		self.options.show_options()
-		print
 
 		# keep track of how many notices deep we are
 		self.__n_index = 0
