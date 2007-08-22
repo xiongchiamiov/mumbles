@@ -41,7 +41,7 @@ class PidginMumbles(MumblesPlugin):
 		if buddy != 0:
 			name = self.pidgin_interface.PurpleBuddyGetAlias(buddy)
 
-		icon = self.plugin_dir+"/pidgin/pidgin/themes/pidgin.png"
+		icon = self.plugin_dir+"/eggs/pidgin/src/themes/pidgin.png"
 		self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 
@@ -60,7 +60,7 @@ class PidginMumbles(MumblesPlugin):
 
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
-			icon = self.plugin_dir+"/pidgin/pidgin/themes/irc.png"
+			icon = self.plugin_dir+"/eggs/pidgin/src/themes/irc.png"
 			self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 

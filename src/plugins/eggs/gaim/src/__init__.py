@@ -41,7 +41,7 @@ class GaimMumbles(MumblesPlugin):
 		if buddy != 0:
 			name = self.gaim_interface.GaimBuddyGetAlias(buddy)
 
-		icon = self.plugin_dir+"/gaim/gaim/themes/gaim.png"
+		icon = self.plugin_dir+"/eggs/gaim/src/themes/gaim.png"
 		self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 
@@ -60,7 +60,7 @@ class GaimMumbles(MumblesPlugin):
 
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
-			icon = self.plugin_dir+"/gaim/gaim/themes/irc.png"
+			icon = self.plugin_dir+"/eggs/gaim/src/themes/irc.png"
 			self.mumbles_notify.alert(self.plugin_name, name, message, icon)
 
 

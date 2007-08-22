@@ -42,6 +42,6 @@ class RhythmboxMumbles(MumblesPlugin):
 		header = escape("%s - %s" %(metadata["artist"],metadata["album"]))
 		message = escape("%d: %s" %(metadata["track-number"],metadata["title"]))
 
-		icon = self.plugin_dir+"/rhythmbox/rhythmbox/themes/rhythmbox.xpm"
+		icon = self.plugin_dir+"/eggs/rhythmbox/src/themes/rhythmbox.xpm"
 		self.mumbles_notify.alert(self.plugin_name, header, message, icon)
 

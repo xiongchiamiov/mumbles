@@ -27,7 +27,7 @@ class ThunderbirdMumbles(MumblesPlugin):
 	def NewMail(self, from_addr, subject):
 		from_addr_clean = cgi.escape(from_addr)
 		subject_clean = cgi.escape(subject)
-		icon = self.plugin_dir+"/thunderbird/thunderbird/themes/thunderbird.png"
+		icon = self.plugin_dir+"/eggs/thunderbird/src/themes/thunderbird.png"
 
 		self.mumbles_notify.alert(self.plugin_name, from_addr_clean, subject_clean, icon)
 

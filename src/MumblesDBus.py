@@ -11,9 +11,6 @@ import dbus
 import dbus.service
 
 class MumblesDBus(dbus.service.Object):
-	# for now, until the signal issue is worked out
-	# pass a MumblesNotify object here to be used in
-	# the notify Method
 	def __init__(self,bus_name):
 		dbus.service.Object.__init__(self,bus_name,MUMBLES_DBUS_OBJECT)
 
