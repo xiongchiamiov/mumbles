@@ -52,6 +52,7 @@ class Mumbles(object):
 		self.__panel_glade = PANEL_GLADE_FILE
 		self.__preferences_glade = PREFERENCES_GLADE_FILE
 		self.__options = None
+		self.__themes = None
 		self.__about = None
 		self.__preferences = None
 		self.__tray = None
@@ -88,12 +89,28 @@ class Mumbles(object):
 		self.__options.set_option('mumbles-notifications', 'notification_placement', self.__preferences.get_widget('combo_screen_placement').get_active())
 		self.__options.set_option('mumbles-notifications', 'notification_direction', self.__preferences.get_widget('combo_direction').get_active())
 		self.__options.set_option('mumbles-notifications', 'notification_duration', self.__preferences.get_widget('spin_duration').get_value_as_int())
+		self.__options.set_option('mumbles-notifications', 'theme', self.__preferences.get_widget('combo_theme').get_active_text())
+
+		self.__options.set_option('mumbles', 'growl_network_enabled', int(self.__preferences.get_widget('check_growl_network').get_active()))
+		self.__options.set_option('mumbles', 'growl_network_password', self.__preferences.get_widget('entry_growl_password').get_text())
+
 		self.__options.save()
+		self.__mumbles_notify.set_options(self.__options)
+		self.__growl_server.update(self.__options.get_option('mumbles', 'growl_network_enabled'), self.__options.get_option('mumbles', 'growl_network_password'))
 
 		self.__preferences_close(None)
 
 	def __preferences_close(self, widget, event=None):
 		self.__preferences_window.hide()
+		return True
+
+	def __growl_network_toggled(self, widget, event=None):
+		if widget.get_active():
+			self.__preferences.get_widget('label_growl_password').set_sensitive(True)
+			self.__preferences.get_widget('entry_growl_password').set_editable(True)
+		else:
+			self.__preferences.get_widget('label_growl_password').set_sensitive(False)
+			self.__preferences.get_widget('entry_growl_password').set_editable(False)
 		return True
 
 	def __menu_preferences_activate(self, widget):
@@ -103,6 +120,7 @@ class Mumbles(object):
 			"on_cancel_clicked" : self.__preferences_close,
 			"on_preferences_destroy" : self.__preferences_close,
 			"on_preferences_delete" : self.__preferences_close,
+			"on_check_growl_network_toggled" : self.__growl_network_toggled
 		}
 
 		self.__preferences = gtk.glade.XML(self.__preferences_glade, "mumbles_preferences")
@@ -114,6 +132,19 @@ class Mumbles(object):
 		self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option('mumbles-notifications', 'notification_placement')))
 		self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option('mumbles-notifications', 'notification_direction')))
 		self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option('mumbles-notifications', 'notification_duration')))
+
+		combo_theme = self.__preferences.get_widget('combo_theme')
+		selected_theme = self.__options.get_option('mumbles-notifications', 'theme')
+		index = 0
+		active = 0
+		for i, theme_name in enumerate(self.__themes):
+			combo_theme.append_text(theme_name)
+			if theme_name == selected_theme:
+				active = i
+		combo_theme.set_active(active)
+
+		self.__preferences.get_widget('check_growl_network').set_active(int(self.__options.get_option('mumbles', 'growl_network_enabled')))
+		self.__preferences.get_widget('entry_growl_password').set_text(self.__options.get_option('mumbles', 'growl_network_password'))
 
 
 	def __about_close(self, widget, event=None):
@@ -183,6 +214,15 @@ class Mumbles(object):
 			self.__tray.connect("popup_menu", self.__menu_activate) 
 			self.__tray.set_visible(True)
 
+	def __get_themes(self):
+		themes = ['default']
+		tmp_list = os.listdir(THEMES_DIR)
+		tmp_list.sort()
+		for theme_name in tmp_list:
+			if os.path.isdir(os.path.join(THEMES_DIR, theme_name)) and theme_name[:1] != '.' and theme_name not in themes:
+				themes.append(theme_name)
+		return themes
+
 	def main(self, argv=None):
 
 		check_password = False;
@@ -200,6 +240,8 @@ class Mumbles(object):
 		self.__options.set_option('mumbles', 'verbose', int(self.__options.get_option('mumbles', 'verbose')))
 		self.__options.set_option('mumbles', 'daemon', int(self.__options.get_option('mumbles', 'daemon')))
 		self.__options.set_option('mumbles', 'growl_network_enabled', int(self.__options.get_option('mumbles', 'growl_network_enabled')))
+
+		self.__themes = self.__get_themes()
 
         	if argv is None:
                 	argv = sys.argv
@@ -262,17 +304,21 @@ class Mumbles(object):
 		self.__loop = gobject.MainLoop()
 		gobject.threads_init()
 
+		# setup growl network handler
+		passwd = None
+		passwd = self.__options.get_option('mumbles', 'growl_network_password')
+		if check_password:
+			passwd = getpass()
+		# start growl network listener
+		self.__growl_server = GrowlServer(('', GROWL_UDP_PORT), growlIncoming, passwd)
+		self.__growl_thread = threading.Thread(target = self.__growl_server.serve_forever) 
+		self.__growl_thread.setDaemon(True)
+		self.__growl_thread.start()
+
 		if self.__options.get_option('mumbles', 'growl_network_enabled'):
-			passwd = None
-			if check_password:
-				passwd = getpass()
-			# start growl network listener
 			if self.__verbose:
 				print "Starting Growl Network Support..."
-			growl_server = GrowlServer(('', GROWL_UDP_PORT), growlIncoming, passwd)
-			self.__growl_thread = threading.Thread(target = growl_server.serve_forever) 
-			self.__growl_thread.setDaemon(True)
-			self.__growl_thread.start()
+			self.__growl_server.update(True, passwd)
 
 		if self.__verbose:
 			print "Mumbles is Listening..."

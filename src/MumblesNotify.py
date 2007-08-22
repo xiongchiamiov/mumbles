@@ -115,6 +115,12 @@ class MumblesNotify(object):
 
 		self.__click_handlers = {}
 
+	def set_options(self, new_options):
+		self.options.add_options(new_options)
+		theme_name = self.options.get_option('mumbles-notifications', 'theme')
+		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+		self.add_options_from_config(theme_name, theme_xml)
+
 	def process_xml_options(self, xml_config, xml_item):
 
 		for outerNodeName in xml_config:

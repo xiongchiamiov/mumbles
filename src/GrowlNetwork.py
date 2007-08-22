@@ -156,9 +156,16 @@ class GrowlServer(SocketServer.ThreadingMixIn, SocketServer.UDPServer):
     # closed down correctly.
     allow_reuse_address = True
 
+    active = False
+
     def __init__(self, server_address, RequestHandlerClass, password=None):
 	self.password = password
         SocketServer.UDPServer.__init__(self, server_address, RequestHandlerClass)
+
+    def update(self, active, password):
+	self.active = active
+	self.password = password
+
 
 # The RequestHandler handles an incoming request.
 class growlIncoming(SocketServer.DatagramRequestHandler):
@@ -167,14 +174,16 @@ class growlIncoming(SocketServer.DatagramRequestHandler):
         SocketServer.DatagramRequestHandler.__init__(self, request, client_address, server)
 
     def handle(self):
-        p = GrowlPacket(self.rfile.read(), self.server.password)
 
-	if p.valid:
-        	if p.type() == 'NOTIFY':
-				notification,title,description,app = p.info()   
+	if self.server.active:
+        	p = GrowlPacket(self.rfile.read(), self.server.password)
 
-				mpath = os.path.dirname(__file__)
-				os.system(os.path.join(mpath, 'mumbles-send.py')+' "'+title+'" "'+description+'"')
+		if p.valid:
+        		if p.type() == 'NOTIFY':
+					notification,title,description,app = p.info()   
+
+					mpath = os.path.dirname(__file__)
+					os.system(os.path.join(mpath, 'mumbles-send.py')+' "'+title+'" "'+description+'"')
 
     def finish(self):
 	pass

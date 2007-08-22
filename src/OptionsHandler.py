@@ -46,7 +46,12 @@ class OptionsHandler(object):
 				print "%s: %s = %s" %(section, option, self.options[section][option])
 
 	def get_option(self, section, option):
-		return self.options[section][option]
+		opt = ''
+		try:
+			opt = self.options[section][option]
+		except KeyError:
+			pass
+		return opt
 
 	def set_option(self, section, option, value):
 		self.options[section][option] = value

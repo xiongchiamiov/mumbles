@@ -16,13 +16,16 @@ class MumblesOptions(OptionsHandler):
 		self.options = {}
 		self.options['mumbles'] = {
 				# show/don't show debug messages 
-				'verbosity' : 0,
+				'verbose' : 0,
 
 				# run in deamon mode
 				'daemon' : 0,
 
 				# enable growl network handling
 				'growl_network_enabled' : 0,
+
+				# growl network handling password
+				'growl_network_enabled' : ''
 		}
 		self.options['mumbles-notifications'] = {
 				# placement and direction of notifications
