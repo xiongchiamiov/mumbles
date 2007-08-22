@@ -3,6 +3,7 @@
 
 <glade-interface>
 	<widget class="GtkDialog" id="mumbles_preferences">
+		<property name="icon">mumbles.png</property>
 		<property name="visible">True</property>
 		<property name="title" translatable="yes">Mumbles Preferences</property>
 		<signal name="delete-event" handler="on_preferences_delete"/>
