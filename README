@@ -18,8 +18,8 @@ http://www.mumbles-project.org
 * Python Setuptools
 
 --Installation--
-For now will just create development links for the plugin eggs
-./setup.py
+install from deb pacakge, or unzip the packaged file to a local directory
 
 --Running--
+cd src/
 ./mumbles

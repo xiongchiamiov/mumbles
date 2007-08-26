@@ -1,9 +1,0 @@
-#!/bin/bash
-#
-# THIS FILE IS PART OF THE MUMBLES PROJECT AND IS LICENSED UNDER THE GPL.
-# SEE THE 'COPYING' FILE FOR DETAILS
-#
-# Mumbles Launcher Script
-#
-#------------------------------------------------------------------------
-/usr/bin/env python ./src/Mumbles.py &

@@ -41,7 +41,27 @@ from GrowlNetwork import *
 
 class Usage(Exception):
         def __init__(self, msg=None):
-                self.msg = 'Usage: Mumbles.py [-h] [-v] [-d] [-g|-x] [-p]'
+                #self.msg = 'Usage: Mumbles.py [-h] [-v] [-d] [-g|-x] [-p]'
+		app = sys.argv[0]
+		if msg != 'help':
+			self.msg = app+': Invalid options. Try --help for usage details.'
+		else:
+			self.msg = \
+				app+": Desktop notifications for the Gnome desktop.\n" \
+				"Copyright (C) 2007 dot_j <dot_j@mumbles-project.org>\n\n" \
+				"Usage: mumbles [options]\n\n" \
+				"-h, --help\n" \
+				"\tPrint a summary of the command-line usage of "+app+".\n" \
+				"-v, --verbose\n" \
+				"\tEnable debug messages.\n" \
+				"-d, --daemon\n" \
+				"\tRun in daemon mode without a panel applet.\n" \
+				"-g, --enable-growl-network\n" \
+				"\tEnable growl network support.\n" \
+				"-p {password}, --password {password}\n" \
+				"\tUse the supplied password for growl network support.\n" \
+				"-x, --disable-growl-network\n" \
+				"\tDisable growl network support.\n"
 
 class Mumbles(object):
 
@@ -86,17 +106,17 @@ class Mumbles(object):
 	def __preferences_ok(self, widget):
 
 		# get updated settings
-		self.__options.set_option('mumbles-notifications', 'notification_placement', self.__preferences.get_widget('combo_screen_placement').get_active())
-		self.__options.set_option('mumbles-notifications', 'notification_direction', self.__preferences.get_widget('combo_direction').get_active())
-		self.__options.set_option('mumbles-notifications', 'notification_duration', self.__preferences.get_widget('spin_duration').get_value_as_int())
-		self.__options.set_option('mumbles-notifications', 'theme', self.__preferences.get_widget('combo_theme').get_active_text())
+		self.__options.set_option(CONFIG_MN, 'notification_placement', self.__preferences.get_widget('combo_screen_placement').get_active())
+		self.__options.set_option(CONFIG_MN, 'notification_direction', self.__preferences.get_widget('combo_direction').get_active())
+		self.__options.set_option(CONFIG_MN, 'notification_duration', self.__preferences.get_widget('spin_duration').get_value_as_int())
+		self.__options.set_option(CONFIG_MN, 'theme', self.__preferences.get_widget('combo_theme').get_active_text())
 
-		self.__options.set_option('mumbles', 'growl_network_enabled', int(self.__preferences.get_widget('check_growl_network').get_active()))
-		self.__options.set_option('mumbles', 'growl_network_password', self.__preferences.get_widget('entry_growl_password').get_text())
+		self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__preferences.get_widget('check_growl_network').get_active()))
+		self.__options.set_option(CONFIG_M, 'growl_network_password', self.__preferences.get_widget('entry_growl_password').get_text())
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
-		self.__growl_server.update(self.__options.get_option('mumbles', 'growl_network_enabled'), self.__options.get_option('mumbles', 'growl_network_password'))
+		self.__growl_server.update(self.__options.get_option(CONFIG_M, 'growl_network_enabled'), self.__options.get_option(CONFIG_M, 'growl_network_password'))
 
 		self.__preferences_close(None)
 
@@ -129,12 +149,12 @@ class Mumbles(object):
 		self.__preferences_window = self.__preferences.get_widget("mumbles_preferences")
 
 		# populate with existing settings (or defaults)
-		self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option('mumbles-notifications', 'notification_placement')))
-		self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option('mumbles-notifications', 'notification_direction')))
-		self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option('mumbles-notifications', 'notification_duration')))
+		self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option(CONFIG_MN, 'notification_placement')))
+		self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option(CONFIG_MN, 'notification_direction')))
+		self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option(CONFIG_MN, 'notification_duration')))
 
 		combo_theme = self.__preferences.get_widget('combo_theme')
-		selected_theme = self.__options.get_option('mumbles-notifications', 'theme')
+		selected_theme = self.__options.get_option(CONFIG_MN, 'theme')
 		index = 0
 		active = 0
 		for i, theme_name in enumerate(self.__themes):
@@ -143,8 +163,8 @@ class Mumbles(object):
 				active = i
 		combo_theme.set_active(active)
 
-		self.__preferences.get_widget('check_growl_network').set_active(int(self.__options.get_option('mumbles', 'growl_network_enabled')))
-		self.__preferences.get_widget('entry_growl_password').set_text(self.__options.get_option('mumbles', 'growl_network_password'))
+		self.__preferences.get_widget('check_growl_network').set_active(int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
+		self.__preferences.get_widget('entry_growl_password').set_text(self.__options.get_option(CONFIG_M, 'growl_network_password'))
 
 
 	def __about_close(self, widget, event=None):
@@ -168,7 +188,8 @@ class Mumbles(object):
 
 		try:
 			pkg_resources.working_set.add_entry(PLUGIN_DIR)
-			pkg_env = pkg_resources.Environment([PLUGIN_DIR])
+			pkg_resources.working_set.add_entry(PLUGIN_DIR_USER)
+			pkg_env = pkg_resources.Environment([PLUGIN_DIR, PLUGIN_DIR_USER])
 
 			for name in pkg_env:
 				egg = pkg_env[name][0]
@@ -237,9 +258,9 @@ class Mumbles(object):
 			self.__options.create_file(self.__options.options)
 
 		# convert boolean values to integers
-		self.__options.set_option('mumbles', 'verbose', int(self.__options.get_option('mumbles', 'verbose')))
-		self.__options.set_option('mumbles', 'daemon', int(self.__options.get_option('mumbles', 'daemon')))
-		self.__options.set_option('mumbles', 'growl_network_enabled', int(self.__options.get_option('mumbles', 'growl_network_enabled')))
+		self.__options.set_option(CONFIG_M, 'verbose', int(self.__options.get_option(CONFIG_M, 'verbose')))
+		self.__options.set_option(CONFIG_M, 'daemon', int(self.__options.get_option(CONFIG_M, 'daemon')))
+		self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
 
 		self.__themes = self.__get_themes()
 
@@ -256,17 +277,17 @@ class Mumbles(object):
 
 			for o, a in opts:
 				if o in ("-h", "--help"):
-					raise Usage()
+					raise Usage('help')
 				elif o in ("-v", "--verbose"):
-					self.__options.set_option('mumbles', 'verbose', True)
+					self.__options.set_option(CONFIG_M, 'verbose', 1)
 				elif o in ("-d", "--daemon"):
-					self.__options.set_option('mumbles', 'daemon', True)
+					self.__options.set_option(CONFIG_M, 'daemon', 1)
 				elif o in ("-g", "--enable-growl-network"):
-					self.__options.set_option('mumbles', 'growl_network_enabled', True)
+					self.__options.set_option(CONFIG_M, 'growl_network_enabled', 1)
 				elif o in ("-p", "--password"):
 					check_password = True;
 				elif o in ("-x", "--disable-growl-network"):
-					self.__options.set_option('mumbles', 'growl_network_enabled', False)
+					self.__options.set_option(CONFIG_M, 'growl_network_enabled', 0)
 				else:
 					raise Usage()
         	except Usage, err:
@@ -274,7 +295,7 @@ class Mumbles(object):
                 	return 2
 
 		self.__verbose = False
-		if int(self.__options.get_option('mumbles', 'verbose')):
+		if int(self.__options.get_option(CONFIG_M, 'verbose')):
 			self.__verbose = True
 
 		try:
@@ -296,7 +317,7 @@ class Mumbles(object):
 
 		self.__load_mumbles_plugins()
 
-		if not self.__options.get_option('mumbles', 'daemon'):
+		if not self.__options.get_option(CONFIG_M, 'daemon'):
 			self.__create_panel_applet()
 		elif self.__verbose:
 			print "Starting Mumbles in daemon mode"
@@ -306,7 +327,7 @@ class Mumbles(object):
 
 		# setup growl network handler
 		passwd = None
-		passwd = self.__options.get_option('mumbles', 'growl_network_password')
+		passwd = self.__options.get_option(CONFIG_M, 'growl_network_password')
 		if check_password:
 			passwd = getpass()
 		# start growl network listener
@@ -315,7 +336,7 @@ class Mumbles(object):
 		self.__growl_thread.setDaemon(True)
 		self.__growl_thread.start()
 
-		if self.__options.get_option('mumbles', 'growl_network_enabled'):
+		if self.__options.get_option(CONFIG_M, 'growl_network_enabled'):
 			if self.__verbose:
 				print "Starting Growl Network Support..."
 			self.__growl_server.update(True, passwd)

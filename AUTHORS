@@ -1,3 +1,16 @@
 Mumbles:
+* dot_j <dot_j@mumbles-project.org>
 
-dot_j <dot_j@mumbles-project.org>
+Contributions:
+* Growl Network Support made possible by
+  Steve Benz (steve.benz@gmail.com)
+  Original Idea, GrowlPacked by Rui Carmo (http://the.taoofmac.com)
+  Request Handler examples from
+  http://www.technovelty.org/code/python/socketserver.html
+
+* The DBus Project (http://www.freedesktop.org/wiki/Software/dbus)
+  For their help in making mumbles play nicely with the DBus.
+
+* The Jokosher Project (http://www.jokosher.org)
+  For their excellent project structure and assistance in organizing a python application.
+

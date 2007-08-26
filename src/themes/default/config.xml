@@ -1,24 +1,41 @@
 <mumbles-theme name='default' version='1.0'>
 	<width>250</width>
 	<height>80</height>
+	<spacing>10</spacing>
 	<icon>
 		<x_pos>10</x_pos>
-		<y_pos>25</y_pos>
+		<y_pos>30</y_pos>
 	</icon>
 	<text>
 		<title>
-			<font>Sans</font>
-			<color>#fff</color>
-			<size>10</size>
+			<font>
+				<family>Free Sans</family>
+				<color>#fff</color>
+				<size>12</size>
+			</font>
+			<width>250</width>
+			<height>20</height>
+			<padding>
+				<left>15</left>
+				<right>5</right>
+				<upper>8</upper>
+				<lower>2</lower>
+			</padding>
 		</title>
 		<message>
-			<font>Sans</font>
-			<color>#fff</color>
-			<size>8</size>
+			<font>
+				<family>Free Sans</family>
+				<color>#fff</color>
+				<size>8</size>
+			</font>
+			<width>250</width>
+			<height>60</height>
+			<padding>
+				<left>40</left>
+				<right>5</right>
+				<upper>5</upper>
+				<lower>15</lower>
+			</padding>
 		</message>
-		<x_pos>38</x_pos>
-		<y_pos>8</y_pos>
-		<x_padding>15</x_padding>
-		<y_padding>15</y_padding>
 	</text>
 </mumbles-theme>

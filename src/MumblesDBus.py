@@ -15,5 +15,5 @@ class MumblesDBus(dbus.service.Object):
 		dbus.service.Object.__init__(self,bus_name,MUMBLES_DBUS_OBJECT)
 
 	@dbus.service.signal(dbus_interface=MUMBLES_DBUS_INTERFACE, signature='ss')
-	def Notify(self, name, message):
+	def Notify(self, title, message):
 		pass

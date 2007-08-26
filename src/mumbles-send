@@ -29,7 +29,21 @@ MUMBLES_SEND_ID = "mumbles-send"
 
 class Usage(Exception):
 	def __init__(self, msg=None):
-		self.msg = 'Usage: mumbles-send.py [-l] [-g (ip)] [-p] title content'
+		if msg != 'help':
+			self.msg = 'mumbles-send: Invalid options. Try --help for usage details.'
+		else:
+			self.msg = \
+				"mumbles-send: A simple script to send mumbles notifications.\n" \
+				"Copyright (C) 2007 dot_j <dot_j@mumbles-project.org>\n\n" \
+				"Usage: mumbles-send [options] title [message]\n\n" \
+				"-h, --help\n" \
+				"\tPrint a summary of the command-line usage of mumbles-send.\n" \
+				"-l, --local\n" \
+				"\tSend message to the local machine. Default behavior when not sending a growl network message.\n" \
+				"-g {ip}, --growl-network {ip}\n" \
+				"\tSend message to the supplied ip over the network using the growl network message protocol.\n" \
+				"-p {password}, --password {password}\n" \
+				"\tUse the supplied password for growl network message.\n"
 
 def main(argv=None):
 
@@ -49,7 +63,7 @@ def main(argv=None):
 
 			for o, a in opts:
 				if o in ("-h", "--help"):
-					raise Usage()
+					raise Usage('help')
 				elif o in ("-l", "--local"):
 					send_local = True
 				elif o in ("-g", "--growl-network"):
@@ -70,10 +84,17 @@ def main(argv=None):
 
 
 	content = ''
+	try:
+		if len(args) < 1:
+			raise Usage()
+		else:
+			title = args[0]
+	except Usage, err:
+		print >> sys.stderr, err.msg
+		return 2
+
 	if len(args) > 1:
 		content = args[1]
-
-	title = args[0]
 
 	if send_local:
 		dbus_loop = DBusGMainLoop()

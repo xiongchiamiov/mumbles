@@ -13,7 +13,7 @@ from MumblesGlobals import *
 class OptionsHandler(object):
 
 	def __init__(self):
-		self.filename = os.path.join(CONFIG_DIR, CONFIG_FILE)
+		self.filename = CONFIG_FILE
 		self.options = {}
 		self.__config_parser = ConfigParser.ConfigParser()
 
@@ -67,8 +67,9 @@ class OptionsHandler(object):
 
 	def create_file(self, options):
 		try:
-			if not os.path.isdir(CONFIG_DIR):
-				os.mkdir(CONFIG_DIR)
+			conf_dir = os.path.dirname(CONFIG_FILE)
+			if not os.path.isdir(conf_dir):
+				os.mkdir(conf_dir)
 			if not os.path.isfile(CONFIG_FILE):
 				self.options = options
 				self.save()

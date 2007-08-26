@@ -1,0 +1,20 @@
+#!/usr/bin/env python
+#
+# THIS FILE IS PART OF THE MUMBLES PROJECT AND IS LICENSED UNDER THE GPL.
+# SEE THE 'COPYING' FILE FOR DETAILS
+#
+# Mumbles Launcher Script
+#
+#------------------------------------------------------------------------
+import os, sys
+
+#path = "/usr/share/mumbles/src/"
+path = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(path)
+os.environ.setdefault('MUMBLES_DATA', path)
+
+from MumblesGlobals import *
+from Mumbles import *
+
+mumbles = Mumbles()
+sys.exit(mumbles.main())

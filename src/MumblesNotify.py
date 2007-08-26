@@ -21,15 +21,19 @@ from xml.dom.minidom import Node
 from MumblesGlobals import *
 from OptionsHandler import *
 
+# used for notification placement as they will be auto moved below/above the panels
+# so expect both panels to be showing and place accordingly
+PANEL_HEIGHT = 25
+
 class MumblesNotifyOptions(OptionsHandler):
 
 	def __init__(self):
 		OptionsHandler.__init__(self)
 
-		self.options['mumbles-notifications'] = {
+		self.options[CONFIG_MN] = {
 			# placement and direction of notifications
-			'notification_placement' : NOTIFY_PLACEMENT_RIGHT,
-			'notification_direction' : NOTIFY_DIRECTION_DOWN,
+			'notification_placement' : CONFIG_NOTIFY_PLACEMENT_RIGHT,
+			'notification_direction' : CONFIG_NOTIFY_DIRECTION_DOWN,
 
 			# how long to show the notifications (seconds)
 			'notification_duration' : 5,
@@ -38,51 +42,80 @@ class MumblesNotifyOptions(OptionsHandler):
 			'theme' : 'default'
 		}
 
-		self.options['mumbles-theme'] = {
+		self.options[CONFIG_MT] = {
 
 			# dimenstions of the notification area
 			'width' : 250,
 			'height' : 80,
 
+			# spacing between notifications
+			'spacing' : 10,
+
 			# icon options
 			'icon_x_pos' : 10,
-			'icon_y_pos' : 25,
+			'icon_y_pos' : 30,
 
 			# text formatting
+			'text_title_width' : 250,
+			'text_title_height' : 20,
 			'text_title_font' : 'Sans',
 			'text_title_color' : '#fff',
 			'text_title_size' : 10,
+			'text_title_padding_left' : 15,
+			'text_title_padding_right' : 5,
+			'text_title_padding_upper' : 4,
+			'text_title_padding_lower' : 0,
+
+			'text_message_width' : 250,
+			'text_message_height' : 60,
 			'text_message_font' : 'Sans',
 			'text_message_color' : '#fff',
 			'text_message_size' : 8,
-			'text_x_pos' : 38,
-			'text_y_pos' : 8,
-			'text_x_padding' : 15,
-			'text_y_padding' : 15
+			'text_message_padding_left' : 40,
+			'text_message_padding_right' : 5,
+			'text_message_padding_upper' : 0,
+			'text_message_padding_lower' : 10 
 		}
 
 		self.xml_config_array = {
 			'width'  : ['width', 'int'],
 			'height' : ['height', 'int'],
+			'spacing' : ['spacing', 'int'],
 			'icon' : {
 				'x_pos' : ['icon_x_pos', 'int'],
 				'y_pos' : ['icon_y_pos', 'int']
 			},
 			'text' : {
 				'title' : {
-					'font'  : ['text_title_font', 'string'],
-					'color' : ['text_title_color', 'string'],
-					'size'  : ['text_title_size', 'int']
+					'font' : {
+						'family' : ['text_title_font', 'string'],
+						'color'  : ['text_title_color', 'string'],
+						'size'   : ['text_title_size', 'int']
+					},
+					'width'  : ['text_title_width', 'int'],
+					'height' : ['text_title_height', 'int'],
+					'padding' : {
+						'left'  : ['text_title_padding_left', 'int'],
+						'right'  : ['text_title_padding_right', 'int'],
+						'upper' : ['text_title_padding_upper', 'int'],
+						'lower' : ['text_title_padding_lower', 'int']
+					}
 				},
 				'message' : {
-					'font'  : ['text_message_font', 'string'],
-					'color' : ['text_message_color', 'string'],
-					'size'  : ['text_message_size', 'int']
-				},
-				'x_pos' : ['text_x_pos', 'int'],
-				'y_pos' : ['text_y_pos', 'int'],
-				'x_padding' : ['text_x_padding', 'int'],
-				'y_padding' : ['text_y_padding', 'int']
+					'font' : {
+						'family' : ['text_message_font', 'string'],
+						'color'  : ['text_message_color', 'string'],
+						'size'   : ['text_message_size', 'int'],
+					},
+					'width'  : ['text_message_width', 'int'],
+					'height' : ['text_message_height', 'int'],
+					'padding' : {
+						'left'  : ['text_message_padding_left', 'int'],
+						'right'  : ['text_message_padding_right', 'int'],
+						'upper' : ['text_message_padding_upper', 'int'],
+						'lower' : ['text_message_padding_lower', 'int']
+					}
+				}
 			}
 		}
 
@@ -99,7 +132,7 @@ class MumblesNotify(object):
 		if options:
 			self.options.add_options(options)
 
-		theme_name = self.options.get_option('mumbles-notifications', 'theme')
+		theme_name = self.options.get_option(CONFIG_MN, 'theme')
 		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
 		self.add_options_from_config(theme_name, theme_xml)
 
@@ -109,30 +142,30 @@ class MumblesNotify(object):
 		# keep track of how many active notices there are
 		self.__n_active = 0
 
-		# spacing between notifications
-		# (to-do: window placement currently calculated assuming this is 10)
-		self.__spacing = 10
-
 		self.__click_handlers = {}
+
+		# keep track of last notification vertical placement
+		self.__current_y = 0
 
 	def set_options(self, new_options):
 		self.options.add_options(new_options)
-		theme_name = self.options.get_option('mumbles-notifications', 'theme')
+		theme_name = self.options.get_option(CONFIG_MN, 'theme')
 		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
 		self.add_options_from_config(theme_name, theme_xml)
 
 	def process_xml_options(self, xml_config, xml_item):
 
 		for outerNodeName in xml_config:
-			for node in xml_item.getElementsByTagName(outerNodeName):
-				if node.nodeType == Node.ELEMENT_NODE:
-					if type(xml_config[node.nodeName]) is dict:
-						self.process_xml_options(xml_config[node.nodeName], node)
+			#for node in xml_item.getElementsByTagName(outerNodeName):
+			node = xml_item.getElementsByTagName(outerNodeName)[0]
+			if node.nodeType == Node.ELEMENT_NODE:
+				if type(xml_config[node.nodeName]) is dict:
+					self.process_xml_options(xml_config[node.nodeName], node)
+				else:
+					if xml_config[node.nodeName][1] == 'int':
+						self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
 					else:
-						if xml_config[node.nodeName][1] == 'int':
-							self.options.set_option('mumbles-theme', xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
-						else:
-							self.options.set_option('mumbles-theme', xml_config[node.nodeName][0], node.firstChild.nodeValue)
+						self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], node.firstChild.nodeValue)
 
 
 	def add_options_from_config(self, theme_name, theme_xml):
@@ -148,8 +181,8 @@ class MumblesNotify(object):
 
 		# get root node
 		root = doc.firstChild
-		if not root or root.nodeName != 'mumbles-theme':
-			raise Exception('Missing or invalid rootnode "mumbles-theme" in "%s" theme config file: "%s".' %(theme_name, theme_xml))
+		if not root or root.nodeName != CONFIG_MT:
+			raise Exception('Missing or invalid rootnode "CONFIG_MT" in "%s" theme config file: "%s".' %(theme_name, theme_xml))
 
 		root_theme_name = root.getAttribute('name')
 		if not root_theme_name:
@@ -170,7 +203,26 @@ class MumblesNotify(object):
 			if event.button == 3:
 				self.close(widget.window);
 
-	def expose(self, widget, event, name, message, image):
+	def convert_hex_to_rgb(self, hex_color):
+		if hex_color[0] == '#':
+			hex_color = hex_color[1:]
+		if len(hex_color) != 6:
+			if len(hex_color) != 3:
+				raise ValueError, "Color #%s is not in #rrggbb or #rgb format" %(hex_color)
+			else:
+				hex_color = hex_color[0]*2+hex_color[1]*2+hex_color[2]*2
+
+		ret = []
+		r = hex_color[:2]
+		g = hex_color[2:4]
+		b = hex_color[4:]
+
+		for c in (r, g, b):
+			ret.append((int(c, 16) / 255.0))
+
+		return ret
+
+	def expose(self, widget, event, title, message, image):
 
 		cr = widget.window.cairo_create()
 
@@ -186,7 +238,7 @@ class MumblesNotify(object):
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		background_image = os.path.join(THEMES_DIR, self.options.get_option('mumbles-notifications', 'theme'), 'bground.png')
+		background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
 		default_background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
 
 		if os.path.exists(background_image):
@@ -200,37 +252,88 @@ class MumblesNotify(object):
 			cr.set_source_pixbuf(pixbuf, 0, 0)
 			cr.paint()
 		else:
-			cr.rectangle(0, 0, self.options.get_option('mumbles-theme', 'width'), self.options.get_option('mumbles-theme', 'height'))
+			cr.rectangle(0, 0, self.options.get_option(CONFIG_MT, 'width'), self.options.get_option(CONFIG_MT, 'height'))
 			cr.fill()
 
-
 		# add plugin image
-		plugin_image_width = 0
 		if not image:
 			image = os.path.join(UI_DIR, 'mumbles.png')
 		plugin_image = gtk.gdk.pixbuf_new_from_file(image)
 		if plugin_image:
-			plugin_image_width = plugin_image.get_width()
-			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option('mumbles-theme', 'icon_x_pos'), self.options.get_option('mumbles-theme', 'icon_y_pos'))
+			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option(CONFIG_MT, 'icon_x_pos'), self.options.get_option(CONFIG_MT, 'icon_y_pos'))
 
+		cr.reset_clip()
 
-		# add text
-		cr.rectangle(0, 0, self.options.get_option('mumbles-theme', 'width'), self.options.get_option('mumbles-theme', 'height') - self.options.get_option('mumbles-theme', 'text_y_padding'))
+		# add the title
+		text_title_width = self.options.get_option(CONFIG_MT, 'text_title_width')
+		text_title_height = self.options.get_option(CONFIG_MT, 'text_title_height')
+		text_title_padding_left = self.options.get_option(CONFIG_MT, 'text_title_padding_left')
+		text_title_padding_right = self.options.get_option(CONFIG_MT, 'text_title_padding_right')
+		text_title_padding_upper = self.options.get_option(CONFIG_MT, 'text_title_padding_upper')
+		text_title_padding_lower = self.options.get_option(CONFIG_MT, 'text_title_padding_lower')
+
+		left_edge = (0 + text_title_padding_left)
+		upper_edge = (0 + text_title_padding_upper)
+		right_edge = (text_title_width - text_title_padding_right)
+		lower_edge = (text_title_height - text_title_padding_lower)
+
+		p_layout_title = cr.create_layout()
+		p_layout_title.set_wrap(pango.WRAP_WORD)
+		p_layout_title.set_width((right_edge - left_edge) * pango.SCALE)
+
+		p_fdesc = pango.FontDescription()
+		p_fdesc.set_family_static(self.options.get_option(CONFIG_MT, 'text_title_font'))
+		p_fdesc.set_size(self.options.get_option(CONFIG_MT, 'text_title_size') * pango.SCALE)
+		p_fdesc.set_weight(pango.WEIGHT_BOLD)
+
+		p_layout_title.set_font_description(p_fdesc)
+		p_layout_title.set_text(title)
+
+		cr.rectangle(0, 0, right_edge, (upper_edge + lower_edge))
 		cr.clip()
-		cr.translate(self.options.get_option('mumbles-theme', 'text_x_pos'), self.options.get_option('mumbles-theme', 'text_y_pos'))
+		cr.move_to(left_edge, upper_edge)
 
-		p_layout = cr.create_layout()
-		p_layout.set_wrap(pango.WRAP_WORD)
-		p_layout.set_width((self.options.get_option('mumbles-theme', 'width') - plugin_image_width - self.options.get_option('mumbles-theme', 'text_x_padding')) * pango.SCALE)
+		c = self.convert_hex_to_rgb(self.options.get_option(CONFIG_MT, 'text_title_color'))
+		cr.set_source_rgba(c[0], c[1], c[2])
+		cr.show_layout(p_layout_title)
 
-		title = '<span foreground="'+self.options.get_option('mumbles-theme', 'text_title_color')+'" font_desc="'+self.options.get_option('mumbles-theme', 'text_title_font')+' '+`self.options.get_option('mumbles-theme', 'text_title_size')`+'"><b>'+name+'</b></span>\n'
+		cr.reset_clip()
 
-		message = '<span foreground="'+self.options.get_option('mumbles-theme', 'text_message_color')+'" font_desc="'+self.options.get_option('mumbles-theme', 'text_message_font')+' '+`self.options.get_option('mumbles-theme', 'text_message_size')`+'"><b>'+message+'</b></span>'
+		# add the message
+		text_message_width = self.options.get_option(CONFIG_MT, 'text_message_width')
+		text_message_height = self.options.get_option(CONFIG_MT, 'text_message_height')
+		text_message_padding_left = self.options.get_option(CONFIG_MT, 'text_message_padding_left')
+		text_message_padding_right = self.options.get_option(CONFIG_MT, 'text_message_padding_right')
+		text_message_padding_upper = self.options.get_option(CONFIG_MT, 'text_message_padding_upper')
+		text_message_padding_lower = self.options.get_option(CONFIG_MT, 'text_message_padding_lower')
 
-		p_layout.set_markup(title+message)
+		left_edge = (0 + text_message_padding_left)
+		upper_edge = (text_message_padding_upper + text_title_height) # here start the top edge at the bottom of the title
+		right_edge = (text_message_width - text_message_padding_right)
+		lower_edge = (text_message_height - text_message_padding_lower)
 
-		cr.show_layout(p_layout)
-		cr.fill()
+		p_layout_message = cr.create_layout()
+		p_layout_message.set_wrap(pango.WRAP_WORD)
+		p_layout_message.set_width((right_edge - left_edge) * pango.SCALE)
+
+		p_fdesc = pango.FontDescription()
+		p_fdesc.set_family(self.options.get_option(CONFIG_MT, 'text_message_font'))
+		p_fdesc.set_size(self.options.get_option(CONFIG_MT, 'text_message_size') * pango.SCALE)
+		p_fdesc.set_weight(pango.WEIGHT_BOLD)
+
+		p_layout_message.set_font_description(p_fdesc)
+		p_layout_message.set_text(message)
+
+		cr.rectangle(0, 0, right_edge, (upper_edge + lower_edge))
+		cr.clip()
+		cr.move_to(left_edge, upper_edge)
+
+		cr.set_source_rgba(1, 1, 1)
+		cr.show_layout(p_layout_message)
+
+		c = self.convert_hex_to_rgb(self.options.get_option(CONFIG_MT, 'text_message_color'))
+		cr.set_source_rgba(c[0], c[1], c[2])
+		cr.show_layout(p_layout_message)
 
 		return False
 
@@ -304,20 +407,34 @@ class MumblesNotify(object):
 
 		# initialize for the current display
 		self.screen_changed(win)
-		win.resize( self.options.get_option('mumbles-theme', 'width'),
-			self.options.get_option('mumbles-theme', 'height'))
+		win.resize( self.options.get_option(CONFIG_MT, 'width'),
+			self.options.get_option(CONFIG_MT, 'height'))
 
 		# adjust window position by direction and placement
 		# preferences and how many notifications are active
-		if int(self.options.get_option('mumbles-notifications', 'notification_direction')) == NOTIFY_DIRECTION_DOWN:
-			new_y = ((self.options.get_option('mumbles-theme', 'height')*(self.__n_index)) + self.__spacing )+ (self.__spacing*(self.__n_index+1))
-		else:
-			new_y = gtk.gdk.screen_height() - ((self.options.get_option('mumbles-noifications', 'height')*(self.__n_index+1) + self.__spacing) + (self.__spacing*(self.__n_index+2)))
+		spacing = self.options.get_option(CONFIG_MT, 'spacing')
 
-		if int(self.options.get_option('mumbles-notifications','notification_placement')) == NOTIFY_PLACEMENT_RIGHT:
-			new_x = (gtk.gdk.screen_width()-self.options.get_option('mumbles-theme', 'width')-self.__spacing)
+		notify_height = self.options.get_option(CONFIG_MT, 'height')
+
+		if int(self.options.get_option(CONFIG_MN, 'notification_direction')) == CONFIG_NOTIFY_DIRECTION_DOWN:
+
+			if self.__n_index == 0:
+				new_y = PANEL_HEIGHT
+			else:
+				new_y = self.__current_y + notify_height + spacing
+
 		else:
-			new_x = self.__spacing 
+			if self.__n_index == 0:
+				new_y = gtk.gdk.screen_height() - notify_height - PANEL_HEIGHT
+			else:
+				new_y = self.__current_y - notify_height - spacing
+
+		self.__current_y = new_y
+
+		if int(self.options.get_option(CONFIG_MN,'notification_placement')) == CONFIG_NOTIFY_PLACEMENT_RIGHT:
+			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
+		else:
+			new_x = spacing 
 		win.move(new_x, new_y)
 
 		# increase number of active notifications
@@ -325,7 +442,7 @@ class MumblesNotify(object):
 		self.__n_active += 1
 
 		# show window for a defined about of time
-		source_id = gobject.timeout_add(int(self.options.get_option('mumbles-notifications', 'notification_duration'))*1000, self.close_alert, win)
+		source_id = gobject.timeout_add(int(self.options.get_option(CONFIG_MN, 'notification_duration'))*1000, self.close_alert, win)
 
 		# finally show (and trigger the expose event)
 		win.show_all()
