@@ -7,7 +7,8 @@
 # tarballs are built via: python setup.py sdist
 #
 #-------------------------------------------------------------------------------
-include AUTHORS COPYING README bin/mumbles.desktop
-recursive-include src *.png *.glade *.xml
-recursive-include src/plugins *.egg
-prune src/plugins/eggs
+include AUTHORS COPYING README
+recursive-include bin mumbles mumbles-send mumbles.desktop
+recursive-include src *.png *.glade *.xml *.svg mumbles mumbles-send
+recursive-include src/plugins *.egg README
+recursive-include src/plugins/eggs *.py *.png *.xpm
