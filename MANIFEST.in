@@ -1,0 +1,13 @@
+#
+# THIS FILE IS PART OF THE MUMBLES PROJECT AND IS LICENSED UNDER THE GPL.
+# SEE THE 'COPYING' FILE FOR DETAILS
+#	
+# This manifest file is a template, used by Distutils to include necessary
+# additional files when generating the MANIFEST file, from which distribution
+# tarballs are built via: python setup.py sdist
+#
+#-------------------------------------------------------------------------------
+include AUTHORS COPYING README bin/mumbles.desktop
+recursive-include src *.png *.glade *.xml
+recursive-include src/plugins *.egg
+prune src/plugins/eggs
