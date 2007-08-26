@@ -16,7 +16,7 @@ import os
 class FirefoxMumbles(MumblesPlugin):
 
 	plugin_name = "FirefoxMumbles"
-	interface = "org.mozilla.firefox.DBus"
+	dbus_interface = "org.mozilla.firefox.DBus"
 	dbus_path = "/org/mozilla/firefox/DBus"
 
 	__uri = None
