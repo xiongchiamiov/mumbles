@@ -138,6 +138,8 @@ class MumblesNotify(object):
 		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
 		if not os.path.isfile(theme_xml):
 			theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+		if not os.path.isfile(theme_xml):
+			theme_xml = os.path.join(THEMES_DIR, 'default', 'config.xml')
 
 		self.add_options_from_config(theme_name, theme_xml)
 
@@ -158,6 +160,8 @@ class MumblesNotify(object):
 		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
 		if not os.path.isfile(theme_xml):
 			theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+		if not os.path.isfile(theme_xml):
+			theme_xml = os.path.join(THEMES_DIR, 'default', 'config.xml')
 		self.add_options_from_config(theme_name, theme_xml)
 
 	def process_xml_options(self, xml_config, xml_item):
@@ -194,7 +198,7 @@ class MumblesNotify(object):
 		root_theme_name = root.getAttribute('name')
 		if not root_theme_name:
 			raise Exception('No name for theme defined in "%s".' %(theme_xml))
-		elif root_theme_name != theme_name:
+		elif root_theme_name != theme_name and root_theme_name != 'default':
 			raise Exception('Theme direcotry name "%s" does not match name defined in XML "%s".' %(theme_name, root_theme_name))
 
 		self.process_xml_options(self.options.xml_config_array, root)
