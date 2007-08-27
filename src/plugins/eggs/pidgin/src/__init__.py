@@ -13,7 +13,6 @@ import re
 class PidginMumbles(MumblesPlugin):
 
 	plugin_name = "PidginMumbles"
-	plugin_dir = 'pidgin'
 
 	dbus_interface = "im.pidgin.purple.PurpleInterface"
 	dbus_path = "/im/pidgin/purple/PurpleObject"

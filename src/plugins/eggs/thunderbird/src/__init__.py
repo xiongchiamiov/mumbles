@@ -12,7 +12,6 @@ import dbus
 class ThunderbirdMumbles(MumblesPlugin):
 
 	plugin_name = "ThunderbirdMumbles"
-	plugin_dir = 'thunderbird'
 
 	dbus_interface = "org.mozilla.thunderbird.DBus"
 	dbus_path = "/org/mozilla/thunderbird/DBus"

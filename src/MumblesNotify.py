@@ -6,6 +6,7 @@
 #
 #------------------------------------------------------------------------
 
+import os
 import pango
 import cairo
 
@@ -133,7 +134,11 @@ class MumblesNotify(object):
 			self.options.add_options(options)
 
 		theme_name = self.options.get_option(CONFIG_MN, 'theme')
-		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+
+		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
+		if not os.path.isfile(theme_xml):
+			theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+
 		self.add_options_from_config(theme_name, theme_xml)
 
 		# keep track of how many notices deep we are
@@ -150,7 +155,9 @@ class MumblesNotify(object):
 	def set_options(self, new_options):
 		self.options.add_options(new_options)
 		theme_name = self.options.get_option(CONFIG_MN, 'theme')
-		theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
+		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
+		if not os.path.isfile(theme_xml):
+			theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
 		self.add_options_from_config(theme_name, theme_xml)
 
 	def process_xml_options(self, xml_config, xml_item):
@@ -208,7 +215,8 @@ class MumblesNotify(object):
 			hex_color = hex_color[1:]
 		if len(hex_color) != 6:
 			if len(hex_color) != 3:
-				raise ValueError, "Color #%s is not in #rrggbb or #rgb format" %(hex_color)
+				err = "Color #%s is not in #rrggbb or #rgb format" %(hex_color)
+				raise ValueError, err
 			else:
 				hex_color = hex_color[0]*2+hex_color[1]*2+hex_color[2]*2
 

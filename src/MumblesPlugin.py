@@ -12,7 +12,6 @@ from MumblesGlobals import *
 class MumblesPlugin(object):
 
 		plugin_name = ''
-		plugin_dir = ''
 
 		dbus_interface = ''
 		dbus_path = ''
@@ -42,13 +41,11 @@ class MumblesPlugin(object):
 			if not self.icons[icon_name]:
 				return None
 
-			# try gettin icon from src path if not running installed version
-			icon = os.path.join(PLUGIN_DIR, 'eggs', self.plugin_dir, 'src', 'themes', self.icons[icon_name])
+			icon = os.path.join(PLUGIN_DIR_USER, 'icons', self.icons[icon_name])
 			if os.path.isfile(icon):
 				return icon
 
-			# try getting icon from installed path
-			icon = os.path.join(PLUGIN_DIR, 'icons', self.plugin_dir, self.icons[icon_name])
+			icon = os.path.join(PLUGIN_DIR, 'icons', self.icons[icon_name])
 			if os.path.isfile(icon):
 				return icon
 

@@ -237,11 +237,13 @@ class Mumbles(object):
 
 	def __get_themes(self):
 		themes = ['default']
-		tmp_list = os.listdir(THEMES_DIR)
-		tmp_list.sort()
-		for theme_name in tmp_list:
-			if os.path.isdir(os.path.join(THEMES_DIR, theme_name)) and theme_name[:1] != '.' and theme_name not in themes:
-				themes.append(theme_name)
+		t = [THEMES_DIR, THEMES_DIR_USER]
+		for t_path in t:
+			tmp_list = os.listdir(t_path)
+			tmp_list.sort()
+			for theme_name in tmp_list:
+				if os.path.isdir(os.path.join(t_path, theme_name)) and theme_name[:1] != '.' and theme_name not in themes:
+					themes.append(theme_name)
 		return themes
 
 	def main(self, argv=None):

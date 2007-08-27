@@ -12,7 +12,6 @@ import dbus
 class RhythmboxMumbles(MumblesPlugin):
 
 	plugin_name = "RhythmboxMumbles"
-	plugin_dir = "rhythmbox"
 
 	dbus_interface = "org.gnome.Rhythmbox.Player"
 	dbus_path = "/org/gnome/Rhythmbox/Player"
@@ -22,7 +21,7 @@ class RhythmboxMumbles(MumblesPlugin):
 	dbus_shell_path = "/org/gnome/Rhythmbox/Shell"
 
 	icons = {
-		'rhythmbox' : 'rhythmbox.xpm'
+		'rhythmbox' : 'rhythmbox.png'
 	}
 
 	def __init__(self, mumbles_notify, session_bus):

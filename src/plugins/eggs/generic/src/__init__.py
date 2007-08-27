@@ -12,7 +12,6 @@ import dbus
 class GenericMumbles(MumblesPlugin):
 
 	plugin_name = "GenericMumbler"
-	plugin_dir = "generic"
 
 	dbus_interface = "org.mumblesproject.Mumbles"
 	dbus_path = "/org/mumblesproject/Mumbles"

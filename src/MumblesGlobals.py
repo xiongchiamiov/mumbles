@@ -17,6 +17,7 @@ if not data_path:
 PLUGIN_DIR = os.path.join(data_path, 'plugins')
 PLUGIN_DIR_USER = os.path.expanduser('~/.mumbles/plugins/')
 THEMES_DIR = os.path.join(data_path, 'themes')
+THEMES_DIR_USER = os.path.expanduser('~/.mumbles/themes/')
 UI_DIR = os.path.join(data_path, 'ui')
 
 MUMBLES_DBUS_NAME = 'org.mumblesproject.Mumbles'

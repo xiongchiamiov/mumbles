@@ -13,7 +13,6 @@ import re
 class GaimMumbles(MumblesPlugin):
 
 	plugin_name = "GaimMumbles"
-	plugin_dir = "gaim"
 
 	dbus_interface = "net.sf.gaim.GaimInterface"
 	dbus_path = "/net/sf/gaim/GaimObject"
