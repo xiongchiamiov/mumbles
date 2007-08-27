@@ -8,7 +8,6 @@
 
 from MumblesPlugin import *
 import dbus
-import cgi
 import gnomevfs
 import os
 
@@ -16,8 +15,12 @@ import os
 class FirefoxMumbles(MumblesPlugin):
 
 	plugin_name = "FirefoxMumbles"
+	plugin_dir = "firefox"
+
 	dbus_interface = "org.mozilla.firefox.DBus"
 	dbus_path = "/org/mozilla/firefox/DBus"
+
+	icons = {'firefox' : 'firefox.png'}
 
 	__uri = None
 
@@ -27,13 +30,12 @@ class FirefoxMumbles(MumblesPlugin):
 		}
 
 		MumblesPlugin.__init__(self, mumbles_notify, session_bus)
-		self.addClickHandler(self.onClick)
+		self.add_click_handler(self.onClick)
 
  	def DownloadComplete(self, title, uri):
  		self.__uri = uri
- 		title = cgi.escape(title)
- 		uri = cgi.escape(os.path.basename(uri))
- 		icon = self.plugin_dir+"/eggs/firefox/src/themes/firefox.png"
+ 		uri = os.path.basename(uri)
+		icon = self.get_icon('firefox')
  		self.mumbles_notify.alert(self.plugin_name, title, uri, icon)
 
  	def onClick(self, widget, event, plugin_name):

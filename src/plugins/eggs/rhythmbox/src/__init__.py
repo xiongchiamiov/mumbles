@@ -8,17 +8,22 @@
 
 from MumblesPlugin import *
 import dbus
-from cgi import escape
 
 class RhythmboxMumbles(MumblesPlugin):
 
 	plugin_name = "RhythmboxMumbles"
+	plugin_dir = "rhythmbox"
+
 	dbus_interface = "org.gnome.Rhythmbox.Player"
 	dbus_path = "/org/gnome/Rhythmbox/Player"
 
 	dbus_name = "org.gnome.Rhythmbox"
 	dbus_shell_interface = "org.gnome.Rhythmbox.Shell"
 	dbus_shell_path = "/org/gnome/Rhythmbox/Shell"
+
+	icons = {
+		'rhythmbox' : 'rhythmbox.xpm'
+	}
 
 	def __init__(self, mumbles_notify, session_bus):
 		self.signal_config = {
@@ -39,9 +44,9 @@ class RhythmboxMumbles(MumblesPlugin):
 			if key in info:
 				metadata[key] = data[key]
 
-		header = escape("%s - %s" %(metadata["artist"],metadata["album"]))
-		message = escape("%d: %s" %(metadata["track-number"],metadata["title"]))
+		header = "%s - %s" %(metadata["artist"],metadata["album"])
+		message = "%d: %s" %(metadata["track-number"],metadata["title"])
+		icon = self.get_icon('rhythmbox')
 
-		icon = self.plugin_dir+"/eggs/rhythmbox/src/themes/rhythmbox.xpm"
 		self.mumbles_notify.alert(self.plugin_name, header, message, icon)
 

@@ -12,6 +12,8 @@ import dbus
 class GrowlMumbles(MumblesPlugin):
 
 	plugin_name = "GrowlMumbler"
+	plugin_dir = "growl"
+
 	dbus_interface = "info.growl.Growl"
 	dbus_path = "/info/growl/Growl"
 

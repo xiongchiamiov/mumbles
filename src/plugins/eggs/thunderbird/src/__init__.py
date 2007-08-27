@@ -8,13 +8,16 @@
 
 from MumblesPlugin import *
 import dbus
-import cgi
 
 class ThunderbirdMumbles(MumblesPlugin):
 
 	plugin_name = "ThunderbirdMumbles"
+	plugin_dir = 'thunderbird'
+
 	dbus_interface = "org.mozilla.thunderbird.DBus"
 	dbus_path = "/org/mozilla/thunderbird/DBus"
+
+	icons = {'thunderbird' : 'thunderbird.png'}
 
 	def __init__(self, mumbles_notify, session_bus):
 		self.signal_config = {
@@ -25,9 +28,6 @@ class ThunderbirdMumbles(MumblesPlugin):
 
 
 	def NewMail(self, from_addr, subject):
-		from_addr_clean = cgi.escape(from_addr)
-		subject_clean = cgi.escape(subject)
-		icon = self.plugin_dir+"/eggs/thunderbird/src/themes/thunderbird.png"
-
-		self.mumbles_notify.alert(self.plugin_name, from_addr_clean, subject_clean, icon)
+		icon = self.get_icon('thunderbird')
+		self.mumbles_notify.alert(self.plugin_name, from_addr, subject, icon)
 

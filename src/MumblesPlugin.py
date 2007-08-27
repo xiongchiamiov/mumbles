@@ -12,13 +12,15 @@ from MumblesGlobals import *
 class MumblesPlugin(object):
 
 		plugin_name = ''
+		plugin_dir = ''
+
 		dbus_interface = ''
 		dbus_path = ''
 
+		icons = {}
 		signal_confg = {}
 
 		def __init__(self, mumbles_notify, session_bus):
-			self.plugin_dir = PLUGIN_DIR
 
 			self.mumbles_notify = mumbles_notify
 			self.session_bus = session_bus
@@ -33,5 +35,22 @@ class MumblesPlugin(object):
 		def get_name(self):
 			return self.plugin_name
 
-		def addClickHandler(self, handler):
-			self.mumbles_notify.addClickHandler(self.plugin_name, handler)
+		def add_click_handler(self, handler):
+			self.mumbles_notify.add_click_handler(self.plugin_name, handler)
+
+		def get_icon(self, icon_name):
+			if not self.icons[icon_name]:
+				return None
+
+			# try gettin icon from src path if not running installed version
+			icon = os.path.join(PLUGIN_DIR, 'eggs', self.plugin_dir, 'src', 'themes', self.icons[icon_name])
+			if os.path.isfile(icon):
+				return icon
+
+			# try getting icon from installed path
+			icon = os.path.join(PLUGIN_DIR, 'icons', self.plugin_dir, self.icons[icon_name])
+			if os.path.isfile(icon):
+				return icon
+
+			return None
+

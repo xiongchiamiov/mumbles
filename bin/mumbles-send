@@ -22,9 +22,8 @@ from dbus.mainloop.glib import DBusGMainLoop
 from socket import AF_INET, SOCK_DGRAM, socket
 from getpass import getpass
 
-path = "/usr/share/mumbles/src/"
-sys.path.append(path)
-os.environ.setdefault('MUMBLES_DATA', path)
+sys.path.append("/usr/share/python-support/mumbles/src/")
+os.environ.setdefault("MUMBLES_PATH", "/usr/share/mumbles/")
 
 from MumblesGlobals import *
 from MumblesDBus import *

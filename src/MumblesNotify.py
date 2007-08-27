@@ -193,7 +193,7 @@ class MumblesNotify(object):
 		self.process_xml_options(self.options.xml_config_array, root)
 
 
-	def addClickHandler(self, plugin_name, click_handler):
+	def add_click_handler(self, plugin_name, click_handler):
 		self.__click_handlers[plugin_name] = click_handler
 
 	def clicked(self, widget, event, plugin_name = None):

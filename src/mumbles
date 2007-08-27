@@ -8,10 +8,9 @@
 #------------------------------------------------------------------------
 import os, sys
 
-#path = "/usr/share/mumbles/src/"
 path = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(path)
-os.environ.setdefault('MUMBLES_DATA', path)
+os.environ.setdefault('MUMBLES_PATH', path)
 
 from MumblesGlobals import *
 from Mumbles import *
