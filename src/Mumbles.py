@@ -76,6 +76,7 @@ class Mumbles(object):
 		self.__about = None
 		self.__preferences = None
 		self.__tray = None
+		self.__verbose = True
 
 	# return True when delete-event is fired to prevent
 	# window from being destroyed
@@ -112,7 +113,7 @@ class Mumbles(object):
 		self.__options.set_option(CONFIG_MN, 'theme', self.__preferences.get_widget('combo_theme').get_active_text())
 
 		self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__preferences.get_widget('check_growl_network').get_active()))
-		self.__options.set_option(CONFIG_M, 'growl_network_password', self.__preferences.get_widget('entry_growl_password').get_text())
+		self.__options.set_option(CONFIG_M, 'growl_network_password', self.__encrypt(self.__preferences.get_widget('entry_growl_password').get_text()))
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
@@ -149,9 +150,26 @@ class Mumbles(object):
 		self.__preferences_window = self.__preferences.get_widget("mumbles_preferences")
 
 		# populate with existing settings (or defaults)
-		self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option(CONFIG_MN, 'notification_placement')))
-		self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option(CONFIG_MN, 'notification_direction')))
-		self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option(CONFIG_MN, 'notification_duration')))
+		try:
+			self.__preferences.get_widget('combo_screen_placement').set_active(int(self.__options.get_option(CONFIG_MN, 'notification_placement')))
+		except:
+			self.__preferences.get_widget('combo_screen_placement').set_active(CONFIG_NOTIFY_PLACEMENT_RIGHT)
+			if self.__verbose:
+				print "Warning: Unable to set option for notification_placement. Falling back to default value."
+
+		try:
+			self.__preferences.get_widget('combo_direction').set_active(int(self.__options.get_option(CONFIG_MN, 'notification_direction')))
+		except:
+			self.__preferences.get_widget('combo_direction').set_active(CONFIG_NOTIFY_DIRECTION_DOWN)
+			if self.__verbose:
+				print "Warning: Unable to set option for notification_direction. Falling back to default value."
+
+		try:
+			self.__preferences.get_widget('spin_duration').set_value(int(self.__options.get_option(CONFIG_MN, 'notification_duration')))
+		except:
+			self.__preferences.get_widget('spin_duration').set_value(5)
+			if self.__verbose:
+				print "Warning: Unable to set option for notification_duration. Falling back to default value."
 
 		combo_theme = self.__preferences.get_widget('combo_theme')
 		selected_theme = self.__options.get_option(CONFIG_MN, 'theme')
@@ -163,8 +181,14 @@ class Mumbles(object):
 				active = i
 		combo_theme.set_active(active)
 
-		self.__preferences.get_widget('check_growl_network').set_active(int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
-		self.__preferences.get_widget('entry_growl_password').set_text(self.__options.get_option(CONFIG_M, 'growl_network_password'))
+		try:
+			self.__preferences.get_widget('check_growl_network').set_active(int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
+		except:
+			self.__preferences.get_widget('check_growl_network').set_active(0)
+			if self.__verbose:
+				print "Warning: Unable to set option for growl network enabled. Falling back to default value."
+		passwd = self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password'))
+		self.__preferences.get_widget('entry_growl_password').set_text(passwd)
 
 
 	def __about_close(self, widget, event=None):
@@ -210,6 +234,19 @@ class Mumbles(object):
 		except:
 			if self.__verbose:
 				print "Error: Unable to load plugins"
+
+	# at least it's better than plain text...
+	def __encrypt(self, plain):
+		ret = ''
+		for i in range(len(plain)): 
+				ret += chr(ord(plain[i])+i+1)
+		return ret
+
+	def __decrypt(self, enc_pass):
+		ret = ''
+		for i in range(len(enc_pass)): 
+				ret += chr(ord(enc_pass[i])-i-1)
+		return ret
 
 
 	def __get_widget_by_name(self, glade_file, name, signals=None):
@@ -261,9 +298,25 @@ class Mumbles(object):
 			self.__options.create_file(self.__options.options)
 
 		# convert boolean values to integers
-		self.__options.set_option(CONFIG_M, 'verbose', int(self.__options.get_option(CONFIG_M, 'verbose')))
-		self.__options.set_option(CONFIG_M, 'daemon', int(self.__options.get_option(CONFIG_M, 'daemon')))
-		self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
+		try:
+			self.__options.set_option(CONFIG_M, 'verbose', int(self.__options.get_option(CONFIG_M, 'verbose')))
+		except:
+			self.__options.set_option(CONFIG_M, 'verbose', 0)
+			if self.__verbose:
+				print "Warning: Unable to set option for verbose. Falling back to default value."
+		try:
+			self.__options.set_option(CONFIG_M, 'daemon', int(self.__options.get_option(CONFIG_M, 'daemon')))
+		except:
+			self.__options.set_option(CONFIG_M, 'daemon', 0)
+			if self.__verbose:
+				print "Warning: Unable to set option for daemon. Falling back to default value."
+
+		try:
+			self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
+		except:
+			self.__options.set_option(CONFIG_M, 'growl_network_enabled', 0)
+			if self.__verbose:
+				print "Warning: Unable to set option for growl network enabled. Falling back to default value."
 
 		self.__themes = self.__get_themes()
 
@@ -298,8 +351,11 @@ class Mumbles(object):
                 	return 2
 
 		self.__verbose = False
-		if int(self.__options.get_option(CONFIG_M, 'verbose')):
-			self.__verbose = True
+		try:
+			if int(self.__options.get_option(CONFIG_M, 'verbose')):
+				self.__verbose = True
+		except:
+			self.__verbose = False
 
 		try:
 			self.__bus = dbus.SessionBus()
@@ -330,7 +386,7 @@ class Mumbles(object):
 
 		# setup growl network handler
 		passwd = None
-		passwd = self.__options.get_option(CONFIG_M, 'growl_network_password')
+		passwd = self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password'))
 		if check_password:
 			passwd = getpass()
 		# start growl network listener

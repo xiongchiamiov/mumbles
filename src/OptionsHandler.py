@@ -36,8 +36,9 @@ class OptionsHandler(object):
 			self.config_file = self.__config_parser.read(self.filename)
 
 			for section in self.options:
-				for option in self.__config_parser.options(section):
-					self.options[section][option] = self.__config_parser.get(section, option)
+				if self.__config_parser.has_section(section):
+					for option in self.__config_parser.options(section):
+						self.options[section][option] = self.__config_parser.get(section, option)
 
 	def show_options(self):
 		for section in self.options:

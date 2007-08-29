@@ -36,13 +36,12 @@ class PidginMumbles(MumblesPlugin):
 		message = self.unescape(self.striphtml(message))
 		icon = 0
 
-		if not self.pidgin_interface:
-			pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
-			self.pidgin_interface = dbus.Interface(pidgin_object, self.dbus_interface)
+		pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+		pidgin_interface = dbus.Interface(pidgin_object, self.dbus_interface)
 
-		buddy = self.pidgin_interface.PurpleFindBuddy(account, name)
+		buddy = pidgin_interface.PurpleFindBuddy(account, name)
 		if buddy != 0:
-			name = self.pidgin_interface.PurpleBuddyGetAlias(buddy)
+			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
 
 		name = self.unescape(name)
 		icon = self.get_icon('pidgin')
@@ -53,14 +52,13 @@ class PidginMumbles(MumblesPlugin):
 
 		message = self.unescape(self.striphtml(message))
 
-		if not self.pidgin_interface:
-			pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
-			self.pidgin_interface = dbus.Interface(pidgin_object, self.dbus_interface)
+		pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+		pidgin_interface = dbus.Interface(pidgin_object, self.dbus_interface)
 
-        	chatroom_name = self.pidgin_interface.PurpleConversationGetTitle(conversation)
-        	chat_data = self.pidgin_interface.PurpleConversationGetChatData(conversation)
+        	chatroom_name = pidgin_interface.PurpleConversationGetTitle(conversation)
+        	chat_data = pidgin_interface.PurpleConversationGetChatData(conversation)
 
-        	chat_nick = self.pidgin_interface.PurpleConvChatGetNick(chat_data)
+        	chat_nick = pidgin_interface.PurpleConvChatGetNick(chat_data)
 
         	if name != chat_nick:
                 	name = chatroom_name+": "+name

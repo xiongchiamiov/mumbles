@@ -35,17 +35,17 @@ class RhythmboxMumbles(MumblesPlugin):
 		metadata = {}
 		info = ["artist", "album", "title", "track-number"]
 
-		rhythmbox_shell_object = self.session_bus.get_object(self.dbus_name, self.dbus_shell_path)
+		rhythmbox_shell_object = self.session_bus.get_object(self.dbus_name, self.dbus_shell_path, False)
 		shell = dbus.Interface(rhythmbox_shell_object, self.dbus_shell_interface)
+		if uri:
+			data = shell.getSongProperties(uri)
+			for key in data:
+				if key in info:
+					metadata[key] = data[key]
 
-		data = shell.getSongProperties(uri)
-		for key in data:
-			if key in info:
-				metadata[key] = data[key]
+			header = metadata["title"]
+			message = "%s - %s\nTrack: %d" %(metadata["artist"],metadata["album"],metadata["track-number"])
+			icon = self.get_icon('rhythmbox')
 
-		header = "%s - %s" %(metadata["artist"],metadata["album"])
-		message = "%d: %s" %(metadata["track-number"],metadata["title"])
-		icon = self.get_icon('rhythmbox')
-
-		self.mumbles_notify.alert(self.plugin_name, header, message, icon)
+			self.mumbles_notify.alert(self.plugin_name, header, message, icon)
 

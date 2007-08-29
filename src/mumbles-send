@@ -22,6 +22,7 @@ from socket import AF_INET, SOCK_DGRAM, socket
 from getpass import getpass
 
 from MumblesGlobals import *
+from OptionsHandler import *
 from MumblesDBus import *
 from GrowlNetwork import *
 
@@ -43,7 +44,20 @@ class Usage(Exception):
 				"-g {ip}, --growl-network {ip}\n" \
 				"\tSend message to the supplied ip over the network using the growl network message protocol.\n" \
 				"-p {password}, --password {password}\n" \
-				"\tUse the supplied password for growl network message.\n"
+				"\tUse the prompted password for growl network message.\n" \
+				"-s, --use-conf-password\n" \
+				"\tUse the password from mumbles.conf for growl network message.\n"
+
+# at least it's better than plain text...
+def get_password_from_conf():
+	oh = OptionsHandler()
+	oh.options = {CONFIG_M:{}}
+	oh.load()
+	enc_passwd = oh.get_option(CONFIG_M, 'growl_network_password')
+	passwd = ''
+	for i in range(len(enc_passwd)):
+		passwd += chr(ord(enc_passwd[i])-i-1)
+	return passwd
 
 def main(argv=None):
 
@@ -51,12 +65,13 @@ def main(argv=None):
 	send_network = False
 	network_addr = None
 	prompt_password = False
+	get_conf_password = False
 
 	if argv is None:
 		argv = sys.argv
 		try:
 			try:
-				opts, args = getopt.getopt(sys.argv[1:], "hlg:p", ["help", "local", "growl-network", "password"])
+				opts, args = getopt.getopt(sys.argv[1:], "hlg:ps", ["help", "local", "growl-network", "password", "use-conf-password"])
 			except getopt.GetoptError:
 
 				raise Usage()
@@ -73,6 +88,8 @@ def main(argv=None):
 					network_addr = a
 				elif o in ("-p", "--password"):
 					prompt_password = True
+				elif o in ("-s", "--use-conf-password"):
+					get_conf_password = True
 				else:
 					raise Usage()
 		except Usage, err:
@@ -107,6 +124,8 @@ def main(argv=None):
 		passwd = None
 		if prompt_password:
 			passwd = getpass()
+		elif get_conf_password:
+			passwd = get_password_from_conf()
 
 		addr = (network_addr, GROWL_UDP_PORT)
 		s = socket(AF_INET,SOCK_DGRAM)

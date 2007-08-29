@@ -174,7 +174,10 @@ class MumblesNotify(object):
 					self.process_xml_options(xml_config[node.nodeName], node)
 				else:
 					if xml_config[node.nodeName][1] == 'int':
-						self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
+						try:
+							self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
+						except:
+							raise Exception("Warning: Invalid value for option %s. Expected integer." %(xml_config[node.nodeName][0]))
 					else:
 						self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], node.firstChild.nodeValue)
 
@@ -428,7 +431,13 @@ class MumblesNotify(object):
 
 		notify_height = self.options.get_option(CONFIG_MT, 'height')
 
-		if int(self.options.get_option(CONFIG_MN, 'notification_direction')) == CONFIG_NOTIFY_DIRECTION_DOWN:
+		try:
+			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
+		except:
+			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_direction'))
+			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
+
+		if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
 
 			if self.__n_index == 0:
 				new_y = PANEL_HEIGHT
@@ -443,7 +452,12 @@ class MumblesNotify(object):
 
 		self.__current_y = new_y
 
-		if int(self.options.get_option(CONFIG_MN,'notification_placement')) == CONFIG_NOTIFY_PLACEMENT_RIGHT:
+		try:
+			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
+		except:
+			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.options.get_option(CONFIG_MN,'notification_placement'))
+			cur_placement = CONFIG_NOTIFY_PLACEMENT_RIGHT
+		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
 			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
 		else:
 			new_x = spacing 
@@ -454,7 +468,12 @@ class MumblesNotify(object):
 		self.__n_active += 1
 
 		# show window for a defined about of time
-		source_id = gobject.timeout_add(int(self.options.get_option(CONFIG_MN, 'notification_duration'))*1000, self.close_alert, win)
+		try:
+			cur_duration = int(self.options.get_option(CONFIG_MN, 'notification_duration'))
+		except:
+			print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
+			cur_duration = 5
+		source_id = gobject.timeout_add(cur_duration*1000, self.close_alert, win)
 
 		# finally show (and trigger the expose event)
 		win.show_all()

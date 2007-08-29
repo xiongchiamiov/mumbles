@@ -36,13 +36,12 @@ class GaimMumbles(MumblesPlugin):
 		message = self.unescape(self.striphtml(message))
 		icon = 0
 
-		if not self.gaim_interface:
-			gaim_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
-			self.gaim_interface = dbus.Interface(gaim_object, self.dbus_interface)
+		gaim_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+		gaim_interface = dbus.Interface(gaim_object, self.dbus_interface)
 
-		buddy = self.gaim_interface.GaimFindBuddy(account, name)
+		buddy = gaim_interface.GaimFindBuddy(account, name)
 		if buddy != 0:
-			name = self.gaim_interface.GaimBuddyGetAlias(buddy)
+			name = gaim_interface.GaimBuddyGetAlias(buddy)
 
 		name = self.unescape(name)
 
@@ -54,14 +53,13 @@ class GaimMumbles(MumblesPlugin):
 
 		message = self.unescape(self.striphtml(message))
 
-		if not self.gaim_interface:
-			gaim_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
-			self.gaim_interface = dbus.Interface(gaim_object, self.dbus_interface)
+		gaim_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+		gaim_interface = dbus.Interface(gaim_object, self.dbus_interface)
 
-        	chatroom_name = self.gaim_interface.GaimConversationGetTitle(conversation)
-        	chat_data = self.gaim_interface.GaimConversationGetChatData(conversation)
+        	chatroom_name = gaim_interface.GaimConversationGetTitle(conversation)
+        	chat_data = gaim_interface.GaimConversationGetChatData(conversation)
 
-        	chat_nick = self.gaim_interface.GaimConvChatGetNick(chat_data)
+        	chat_nick = gaim_interface.GaimConvChatGetNick(chat_data)
 
         	if name != chat_nick:
                 	name = chatroom_name+": "+name
