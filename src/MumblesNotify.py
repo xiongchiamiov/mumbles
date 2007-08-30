@@ -293,7 +293,7 @@ class MumblesNotify(object):
 		lower_edge = (text_title_height - text_title_padding_lower)
 
 		p_layout_title = cr.create_layout()
-		p_layout_title.set_wrap(pango.WRAP_WORD)
+		p_layout_title.set_wrap(pango.WRAP_CHAR)
 		p_layout_title.set_width((right_edge - left_edge) * pango.SCALE)
 
 		p_fdesc = pango.FontDescription()

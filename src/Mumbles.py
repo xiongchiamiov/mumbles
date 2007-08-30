@@ -117,7 +117,7 @@ class Mumbles(object):
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
-		self.__growl_server.update(self.__options.get_option(CONFIG_M, 'growl_network_enabled'), self.__options.get_option(CONFIG_M, 'growl_network_password'))
+		self.__growl_server.update(self.__options.get_option(CONFIG_M, 'growl_network_enabled'), self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password')))
 
 		self.__preferences_close(None)
 
