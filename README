@@ -17,9 +17,10 @@ http://www.mumbles-project.org
 * Python Dbus
 * Python Setuptools
 
---Installation--
-install from deb pacakge, or unzip the packaged file to a local directory
+--Installation & Running--
+install from deb pacakge and start with:
+mumbles
 
---Running--
+or unzip the packaged file to a local directory and:
 cd src/
 ./mumbles
