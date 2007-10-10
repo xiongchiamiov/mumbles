@@ -253,13 +253,14 @@ class MumblesNotify(object):
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
-		default_background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
+		background_image = os.path.join(THEMES_DIR_USER, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
+		if not os.path.isfile(background_image):
+			background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
+		if not os.path.isfile(background_image):
+			background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
 
 		if os.path.exists(background_image):
 			pixbuf = gtk.gdk.pixbuf_new_from_file(background_image)
-		elif os.path.exists(default_background_image):
-			pixbuf = gtk.gdk.pixbuf_new_from_file(default_background_image)
 		else:
 			pixbuf = None
 			
