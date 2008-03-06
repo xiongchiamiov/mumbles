@@ -55,6 +55,8 @@ class MumblesNotifyOptions(OptionsHandler):
 			# icon options
 			'icon_x_pos' : 10,
 			'icon_y_pos' : 30,
+			'icon_width' : 30,
+			'icon_height' : 30,
 
 			# text formatting
 			'text_title_width' : 250,
@@ -84,7 +86,9 @@ class MumblesNotifyOptions(OptionsHandler):
 			'spacing' : ['spacing', 'int'],
 			'icon' : {
 				'x_pos' : ['icon_x_pos', 'int'],
-				'y_pos' : ['icon_y_pos', 'int']
+				'y_pos' : ['icon_y_pos', 'int'],
+				'width' : ['icon_width', 'int'],
+				'height' : ['icon_height', 'int']
 			},
 			'text' : {
 				'title' : {
@@ -274,7 +278,7 @@ class MumblesNotify(object):
 		# add plugin image
 		if not image:
 			image = os.path.join(UI_DIR, 'mumbles.png')
-		plugin_image = gtk.gdk.pixbuf_new_from_file(image)
+		plugin_image = gtk.gdk.pixbuf_new_from_file_at_size(image, self.options.get_option(CONFIG_MT, 'icon_width'), self.options.get_option(CONFIG_MT, 'icon_height'))
 		if plugin_image:
 			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option(CONFIG_MT, 'icon_x_pos'), self.options.get_option(CONFIG_MT, 'icon_y_pos'))
 

@@ -5,6 +5,8 @@
 	<icon>
 		<x_pos>5</x_pos>
 		<y_pos>17</y_pos>
+                <width>10</width>
+                <height>10</height>
 	</icon>
 	<text>
 		<title>
