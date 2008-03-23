@@ -211,9 +211,10 @@ class Mumbles(object):
 	def __load_mumbles_plugins(self):
 
 		try:
-			pkg_resources.working_set.add_entry(PLUGIN_DIR)
+			pkg_resources.working_set.add_entry(PLUGIN_DIR_CORE)
+			pkg_resources.working_set.add_entry(PLUGIN_DIR_THIRDPARTY)
 			pkg_resources.working_set.add_entry(PLUGIN_DIR_USER)
-			pkg_env = pkg_resources.Environment([PLUGIN_DIR, PLUGIN_DIR_USER])
+			pkg_env = pkg_resources.Environment([PLUGIN_DIR_CORE, PLUGIN_DIR_THIRDPARTY, PLUGIN_DIR_USER])
 
 			for name in pkg_env:
 				egg = pkg_env[name][0]

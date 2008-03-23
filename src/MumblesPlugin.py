@@ -45,7 +45,11 @@ class MumblesPlugin(object):
 			if os.path.isfile(icon):
 				return icon
 
-			icon = os.path.join(PLUGIN_DIR, 'icons', self.icons[icon_name])
+			icon = os.path.join(PLUGIN_DIR_CORE, 'icons', self.icons[icon_name])
+			if os.path.isfile(icon):
+				return icon
+
+			icon = os.path.join(PLUGIN_DIR_THIRDPARTY, 'icons', self.icons[icon_name])
 			if os.path.isfile(icon):
 				return icon
 

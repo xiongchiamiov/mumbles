@@ -1,0 +1,17 @@
+#
+# THIS FILE IS PART OF THE MUMBLES PROJECT AND IS LICENSED UNDER THE GPL.
+# SEE THE 'COPYING' FILE FOR DETAILS
+#
+# Twitter Mumbles Plugin
+#
+#------------------------------------------------------------------------
+
+Plugin requires the Twitter DBus Notification script available from:
+http://mumbles-project.org/extras
+
+Installation:
+create ~/.mumbles/plugins and ~/.mumbles/plugins/icons directories
+copy AmarokMumbles-0.1-py2.5.egg to ~/.mumbles/plugins
+copy amarok.png to ~/.mumbles/plugins/icons
+
+Restart mumbles & you should have mumbles track change notifications from Amarok!
