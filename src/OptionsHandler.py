@@ -54,12 +54,16 @@ class OptionsHandler(object):
 			pass
 		return opt
 
+	def get_options(self):
+		return self.options
+
 	def set_option(self, section, option, value):
 		self.options[section][option] = value
 
 	def add_options(self, options):
 		opts = options.options
 		for o in opts:
+			print "add option: %s = %s" %(o, opts[o])
 			if o in self.options:
 				for p in opts[o]:
 					self.options[o][p] = opts[o][p]

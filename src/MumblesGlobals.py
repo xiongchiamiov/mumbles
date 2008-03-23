@@ -14,9 +14,17 @@ data_path = os.getenv("MUMBLES_PATH")
 if not data_path:
 	data_path = os.path.dirname(os.path.abspath(__file__))
 
-PLUGIN_DIR_CORE = os.path.join(data_path, 'plugins/core')
-PLUGIN_DIR_THIRDPARTY = os.path.join(data_path, 'plugins/thirdparty')
-PLUGIN_DIR_USER = os.path.expanduser('~/.mumbles/plugins/')
+PLUGIN_TYPE_INPUT = 1
+PLUGIN_TYPE_OUTPUT = 2
+
+PLUGIN_DIR_INPUT_CORE = os.path.join(data_path, 'plugins/input/core')
+PLUGIN_DIR_INPUT_THIRDPARTY = os.path.join(data_path, 'plugins/input/thirdparty')
+
+PLUGIN_DIR_OUTPUT_CORE = os.path.join(data_path, 'plugins/output/core')
+PLUGIN_DIR_OUTPUT_THIRDPARTY = os.path.join(data_path, 'plugins/output/thirdparty')
+
+PLUGIN_DIR_INPUT_USER = os.path.expanduser('~/.mumbles/plugins/')
+
 THEMES_DIR = os.path.join(data_path, 'themes')
 THEMES_DIR_USER = os.path.expanduser('~/.mumbles/themes/')
 UI_DIR = os.path.join(data_path, 'ui')

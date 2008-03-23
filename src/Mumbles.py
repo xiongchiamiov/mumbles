@@ -13,6 +13,7 @@ import sys
 import pkg_resources
 import gtk.glade
 import threading
+import gobject
 
 USE_EGG_TRAYICON = True 
 try:
@@ -33,7 +34,6 @@ from getpass import getpass
 
 from OptionsHandler import *
 from MumblesGlobals import *
-from MumblesNotify import *
 from MumblesOptions import *
 from MumblesDBus import *
 from GrowlNetwork import *
@@ -67,7 +67,6 @@ class Mumbles(object):
 
 	def __init__(self):
 		self.__bus = None
-		self.__mumbles_notify = None
 		self.__plugins = {}
 		self.__panel_glade = PANEL_GLADE_FILE
 		self.__preferences_glade = PREFERENCES_GLADE_FILE
@@ -116,7 +115,8 @@ class Mumbles(object):
 		self.__options.set_option(CONFIG_M, 'growl_network_password', self.__encrypt(self.__preferences.get_widget('entry_growl_password').get_text()))
 
 		self.__options.save()
-		self.__mumbles_notify.set_options(self.__options)
+		#to-do: handle plugin options update here
+		#self.__mumbles_notify.set_options(self.__options)
 		self.__growl_server.update(self.__options.get_option(CONFIG_M, 'growl_network_enabled'), self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password')))
 
 		self.__preferences_close(None)
@@ -208,13 +208,14 @@ class Mumbles(object):
 	def __menu_quit_activate(self, widget):
 		self.__loop.quit()
 
-	def __load_mumbles_plugins(self):
+	def __load_mumbles_plugins(self, plugin_type, dirlist):
 
 		try:
-			pkg_resources.working_set.add_entry(PLUGIN_DIR_CORE)
-			pkg_resources.working_set.add_entry(PLUGIN_DIR_THIRDPARTY)
-			pkg_resources.working_set.add_entry(PLUGIN_DIR_USER)
-			pkg_env = pkg_resources.Environment([PLUGIN_DIR_CORE, PLUGIN_DIR_THIRDPARTY, PLUGIN_DIR_USER])
+			for d in dirlist:
+				pkg_resources.working_set.add_entry(d)
+			pkg_env = pkg_resources.Environment(dirlist)
+			if not plugin_type in self.__plugins:
+				self.__plugins[plugin_type] = {}
 
 			for name in pkg_env:
 				egg = pkg_env[name][0]
@@ -224,17 +225,28 @@ class Mumbles(object):
 					plugin_cls = entry_point.load()
 
 					try:
-						plugin = plugin_cls(self.__mumbles_notify, self.__bus)
-						self.__plugins[plugin.get_name()] = plugin
+						opts =  self.__options.get_options()
+						if plugin_type == PLUGIN_TYPE_INPUT:
+							plugin = plugin_cls(self.__bus, options= opts, verbose = self.__verbose)
+						else:
+							plugin = plugin_cls(options = opts, verbose = self.__verbose)
+							input_plugins = self.__plugins[PLUGIN_TYPE_INPUT]
+							for name, input in input_plugins.iteritems():
+								input.attach_output_plugin(plugin)
+
+						tmp = self.__plugins[plugin_type]
+						tmp[plugin.get_name()] = plugin
 
 						if self.__verbose:
 							print "Successfully loaded %s plugin" %(plugin.get_name())
 					except:
 						if self.__verbose:
 							print "Warning: Unable to load plugin for %s" %(name)
+							print "\t %s for value: %s" %(sys.exc_info()[:2])
 		except:
 			if self.__verbose:
 				print "Error: Unable to load plugins"
+				print "\t %s for value: %s" %(sys.exc_info()[:2])
 
 	# at least it's better than plain text...
 	def __encrypt(self, plain):
@@ -370,12 +382,15 @@ class Mumbles(object):
 		dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
 		self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
 
-		self.__mumbles_notify = MumblesNotify(self.__options)
-
 		name = dbus.service.BusName(MUMBLES_DBUS_NAME,bus=self.__bus)
 		obj = MumblesDBus(name)
 
-		self.__load_mumbles_plugins()
+		dirlist = [PLUGIN_DIR_INPUT_CORE, PLUGIN_DIR_INPUT_THIRDPARTY, PLUGIN_DIR_INPUT_USER]
+		self.__load_mumbles_plugins(PLUGIN_TYPE_INPUT, dirlist)
+
+		#to-do: add user dir
+		dirlist = [PLUGIN_DIR_OUTPUT_CORE, PLUGIN_DIR_OUTPUT_THIRDPARTY]
+		self.__load_mumbles_plugins(PLUGIN_TYPE_OUTPUT, dirlist)
 
 		if not self.__options.get_option(CONFIG_M, 'daemon'):
 			self.__create_panel_applet()
