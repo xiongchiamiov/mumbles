@@ -210,7 +210,8 @@ class Mumbles(object):
 
 	def __load_mumbles_plugins(self, plugin_type, dirlist):
 
-		try:
+		if True:
+		#try:
 			for d in dirlist:
 				pkg_resources.working_set.add_entry(d)
 			pkg_env = pkg_resources.Environment(dirlist)
@@ -224,12 +225,11 @@ class Mumbles(object):
 					entry_point = egg.get_entry_info(ENTRY_POINT, name)
 					plugin_cls = entry_point.load()
 
-					try:
+					if True:
+					#try:
 						opts =  self.__options.get_options()
-						if plugin_type == PLUGIN_TYPE_INPUT:
-							plugin = plugin_cls(self.__bus, options= opts, verbose = self.__verbose)
-						else:
-							plugin = plugin_cls(options = opts, verbose = self.__verbose)
+						plugin = plugin_cls(self.__bus, options= opts, verbose = self.__verbose)
+						if plugin_type == PLUGIN_TYPE_OUTPUT:
 							input_plugins = self.__plugins[PLUGIN_TYPE_INPUT]
 							for name, input in input_plugins.iteritems():
 								input.attach_output_plugin(plugin)
@@ -239,14 +239,14 @@ class Mumbles(object):
 
 						if self.__verbose:
 							print "Successfully loaded %s plugin" %(plugin.get_name())
-					except:
-						if self.__verbose:
-							print "Warning: Unable to load plugin for %s" %(name)
-							print "\t %s for value: %s" %(sys.exc_info()[:2])
-		except:
-			if self.__verbose:
-				print "Error: Unable to load plugins"
-				print "\t %s for value: %s" %(sys.exc_info()[:2])
+					#except:
+						#if self.__verbose:
+							#print "Warning: Unable to load plugin for %s" %(name)
+							#print "\t %s for value: %s" %(sys.exc_info()[:2])
+		#except:
+			#if self.__verbose:
+				#print "Error: Unable to load plugins"
+				#print "\t %s for value: %s" %(sys.exc_info()[:2])
 
 	# at least it's better than plain text...
 	def __encrypt(self, plain):
@@ -379,11 +379,10 @@ class Mumbles(object):
 
 
 		# create callback to load plugin when its service is started
-		dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
-		self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
-
-		name = dbus.service.BusName(MUMBLES_DBUS_NAME,bus=self.__bus)
-		obj = MumblesDBus(name)
+		#dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
+		#self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
+		#name = dbus.service.BusName(MUMBLES_DBUS_NAME,bus=self.__bus)
+		#obj = MumblesDBus(name)
 
 		dirlist = [PLUGIN_DIR_INPUT_CORE, PLUGIN_DIR_INPUT_THIRDPARTY, PLUGIN_DIR_INPUT_USER]
 		self.__load_mumbles_plugins(PLUGIN_TYPE_INPUT, dirlist)

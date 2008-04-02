@@ -12,8 +12,8 @@ class SimplePrintMumblesOutput(MumblesOutputPlugin):
 
 	plugin_name = "SimplePrintMumblesOutput"
 
-	def __init__(self, options=None, verbose=False):
-		MumblesOutputPlugin.__init__(self, options, verbose)
+	def __init__(self, session_bus, options=None, verbose=False):
+		MumblesOutputPlugin.__init__(self, session_bus, options, verbose)
 
 	def get_name(self):
 		return self.plugin_name

@@ -130,10 +130,16 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 
 	plugin_name = "DefaultMumblesOutput"
 
-	#def __init__(self, options = None):
-	def __init__(self, options = None, verbose = False):
+	dbus_interface = "org.mumblesproject.Mumbles.Plugin"
+	dbus_path = "/org/mumblesproject/Mumbles/Plugin"
 
-		MumblesOutputPlugin.__init__(self, options, verbose)
+	def __init__(self, session_bus, options = None, verbose = False):
+
+		self.signal_config = {
+			"ReceivedNotification": self.ReceivedNotification
+		}
+
+		MumblesOutputPlugin.__init__(self, session_bus, options, verbose)
 
 		# get default notification options
 		self.options = MumblesNotifyOptions()
@@ -408,6 +414,8 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		if self.__n_active == 0:
 			self.__n_index = 0
 
+	def ReceivedNotification(self):
+		print "HERE!!"
     
 	def alert(self, alert_object):
 

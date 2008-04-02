@@ -16,7 +16,7 @@ class MumblesInputPlugin(MumblesPlugin):
 	dbus_path = ''
 
 	icons = {}
-	signal_confg = {}
+	signal_config = {}
 
 	alert_object = None
 
@@ -33,7 +33,7 @@ class MumblesInputPlugin(MumblesPlugin):
 				dbus_interface = self.dbus_interface,
 				path = self.dbus_path)
 
-		MumblesPlugin.__init__(self, options, verbose)
+		MumblesPlugin.__init__(self, session_bus, options, verbose)
 
 
 	def set_title(self, title):
