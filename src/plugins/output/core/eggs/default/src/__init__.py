@@ -16,192 +16,27 @@ import gtk
 import pygtk
 pygtk.require('2.0')
 
-import xml.dom.minidom
-from xml.dom.minidom import Node
-
 from MumblesOutputPlugin import *
-from OptionsHandler import *
 
 # used for notification placement as they will be auto moved below/above the panels
 # so expect both panels to be showing and place accordingly
 PANEL_HEIGHT = 25
 
-class MumblesNotifyOptions(OptionsHandler):
+class DefaultMumblesOutputTheme(OptionsFileHandler):
 
-	def __init__(self):
-		OptionsHandler.__init__(self)
-
-		self.options[CONFIG_MN] = {
-			# placement and direction of notifications
-			'notification_placement' : CONFIG_NOTIFY_PLACEMENT_RIGHT,
-			'notification_direction' : CONFIG_NOTIFY_DIRECTION_DOWN,
-
-			# how long to show the notifications (seconds)
-			'notification_duration' : 5,
-
-			# theme directory
-			'theme' : 'default'
-		}
-
-		self.options[CONFIG_MT] = {
-
-			# dimenstions of the notification area
-			'width' : 250,
-			'height' : 80,
-
-			# spacing between notifications
-			'spacing' : 10,
-
-			# icon options
-			'icon_x_pos' : 10,
-			'icon_y_pos' : 30,
-			'icon_width' : 30,
-			'icon_height' : 30,
-
-			# text formatting
-			'text_title_width' : 250,
-			'text_title_height' : 20,
-			'text_title_font' : 'Sans',
-			'text_title_color' : '#fff',
-			'text_title_size' : 10,
-			'text_title_padding_left' : 15,
-			'text_title_padding_right' : 5,
-			'text_title_padding_upper' : 4,
-			'text_title_padding_lower' : 0,
-
-			'text_message_width' : 250,
-			'text_message_height' : 60,
-			'text_message_font' : 'Sans',
-			'text_message_color' : '#fff',
-			'text_message_size' : 8,
-			'text_message_padding_left' : 40,
-			'text_message_padding_right' : 5,
-			'text_message_padding_upper' : 0,
-			'text_message_padding_lower' : 10 
-		}
-
-		self.xml_config_array = {
-			'width'  : ['width', 'int'],
-			'height' : ['height', 'int'],
-			'spacing' : ['spacing', 'int'],
-			'icon' : {
-				'x_pos' : ['icon_x_pos', 'int'],
-				'y_pos' : ['icon_y_pos', 'int'],
-				'width' : ['icon_width', 'int'],
-				'height' : ['icon_height', 'int']
-			},
-			'text' : {
-				'title' : {
-					'font' : {
-						'family' : ['text_title_font', 'string'],
-						'color'  : ['text_title_color', 'string'],
-						'size'   : ['text_title_size', 'int']
-					},
-					'width'  : ['text_title_width', 'int'],
-					'height' : ['text_title_height', 'int'],
-					'padding' : {
-						'left'  : ['text_title_padding_left', 'int'],
-						'right'  : ['text_title_padding_right', 'int'],
-						'upper' : ['text_title_padding_upper', 'int'],
-						'lower' : ['text_title_padding_lower', 'int']
-					}
-				},
-				'message' : {
-					'font' : {
-						'family' : ['text_message_font', 'string'],
-						'color'  : ['text_message_color', 'string'],
-						'size'   : ['text_message_size', 'int'],
-					},
-					'width'  : ['text_message_width', 'int'],
-					'height' : ['text_message_height', 'int'],
-					'padding' : {
-						'left'  : ['text_message_padding_left', 'int'],
-						'right'  : ['text_message_padding_right', 'int'],
-						'upper' : ['text_message_padding_upper', 'int'],
-						'lower' : ['text_message_padding_lower', 'int']
-					}
-				}
-			}
-		}
-
-
-
-class DefaultMumblesOutput(MumblesOutputPlugin):
-
-	plugin_name = "DefaultMumblesOutput"
-
-	dbus_interface = "org.mumblesproject.Mumbles.Plugin"
-	dbus_path = "/org/mumblesproject/Mumbles/Plugin"
-
-	def __init__(self, session_bus, options = None, verbose = False):
-
-		self.signal_config = {
-			"ReceivedNotification": self.ReceivedNotification
-		}
-
-		MumblesOutputPlugin.__init__(self, session_bus, options, verbose)
-
-		# get default notification options
-		self.options = MumblesNotifyOptions()
-
-		# if options were passed, update default options with those
-		if options:
-			for o in options[CONFIG_MN]:
-				self.options.set_option(CONFIG_MN, o, options[CONFIG_MN][o])
-		
-		theme_name = self.options.get_option(CONFIG_MN, 'theme')
-		if self._verbose:
-			print "Default output using theme: %s" %(theme_name)
+	def __init__(self, theme_name):
+		OptionsFileHandler.__init__(self)
 
 		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
 		if not os.path.isfile(theme_xml):
 			theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
 		if not os.path.isfile(theme_xml):
 			theme_xml = os.path.join(THEMES_DIR, 'default', 'config.xml')
+		self._filename = theme_xml
 
-		self.add_options_from_config(theme_name, theme_xml)
-
-		# keep track of how many notices deep we are
-		self.__n_index = 0
-
-		# keep track of how many active notices there are
-		self.__n_active = 0
-
-		self.__click_handlers = {}
-
-		# keep track of last notification vertical placement
-		self.__current_y = 0
-
-	def set_options(self, new_options):
-		self.options.add_options(new_options)
-		theme_name = self.options.get_option(CONFIG_MN, 'theme')
-		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
-		if not os.path.isfile(theme_xml):
-			theme_xml = os.path.join(THEMES_DIR, theme_name, 'config.xml')
-		if not os.path.isfile(theme_xml):
-			theme_xml = os.path.join(THEMES_DIR, 'default', 'config.xml')
-		self.add_options_from_config(theme_name, theme_xml)
-
-	def process_xml_options(self, xml_config, xml_item):
-
-		for outerNodeName in xml_config:
-			#for node in xml_item.getElementsByTagName(outerNodeName):
-			node = xml_item.getElementsByTagName(outerNodeName)[0]
-			if node.nodeType == Node.ELEMENT_NODE:
-				if type(xml_config[node.nodeName]) is dict:
-					self.process_xml_options(xml_config[node.nodeName], node)
-				else:
-					if xml_config[node.nodeName][1] == 'int':
-						try:
-							self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
-						except:
-							raise Exception("Warning: Invalid value for option %s. Expected integer." %(xml_config[node.nodeName][0]))
-					else:
-						self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], node.firstChild.nodeValue)
-
-
-	def add_options_from_config(self, theme_name, theme_xml):
-
+		# TODO load em from the file!
+		# TODO move these exceptions to general OptionsFileHandler
+		'''
 		# create xml document
 		if not os.path.exists(theme_xml):
 			raise Exception('"%s" theme config file not found: "%s".' %(theme_name, theme_xml))
@@ -221,16 +56,179 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 			raise Exception('No name for theme defined in "%s".' %(theme_xml))
 		elif root_theme_name != theme_name and root_theme_name != 'default':
 			raise Exception('Theme direcotry name "%s" does not match name defined in XML "%s".' %(theme_name, root_theme_name))
+		'''
 
-		self.process_xml_options(self.options.xml_config_array, root)
+		# General Settings 
+		self.add_option(IntegerOption('width',
+			250,
+			'Width',
+			'Notification width'))
+		self.add_option(IntegerOption('height',
+			80,
+			'Height',
+			'Notification height'))
+		self.add_option(IntegerOption('spacing',
+			10,
+			'Spacing',
+			'Notification spacing'))
+
+		# icon options
+		icon = self.add_section('icon', 'Icon options')
+		icon.add_option(IntegerOption('xpos',
+			10,
+			'X-Position',
+			'Horizontal Position'))
+		icon.add_option(IntegerOption('ypos',
+			30,
+			'Y-Position',
+			'Vertical Position'))
+		icon.add_option(IntegerOption('width',
+			20,
+			'Width',
+			'Icon width'))
+		icon.add_option(IntegerOption('height',
+			20,
+			'Height',
+			'Icon height'))
+
+		# text & message options:
+		text = self.add_section('text', 'Display Text Options')
+		title = text.add_section('title', 'Title Formatting')
+		message = text.add_section('message', 'Message Formatting')
+
+		title.add_option(IntegerOption('width',
+			250,
+			'Width',
+			'Title width'))
+		message.add_option(IntegerOption('width',
+			250,
+			'Width',
+			'Message width'))
+
+		title.add_option(IntegerOption('height',
+			20,
+			'Height',
+			'Title height'))
+		message.add_option(IntegerOption('height',
+			60,
+			'Height',
+			'Message height'))
+
+		# font
+		t_font = title.add_section('font', 'Title font settings')
+		m_font = message.add_section('font', 'Message font settings')
+		t_font.add_option(TextOption('family',
+			'Free Sans',
+			'Font Family',
+			'Title font family'))
+		m_font.add_option(TextOption('family',
+			'Free Sans',
+			'Font Family',
+			'Message font family'))
+		t_font.add_option(TextOption('color',
+			'#fff',
+			'Font Color',
+			'Title font color'))
+		m_font.add_option(TextOption('color',
+			'#fff',
+			'Font Color',
+			'Message font color'))
+		t_font.add_option(IntegerOption('size',
+			10,
+			'Font Size',
+			'Title font size'))
+		m_font.add_option(IntegerOption('size',
+			8,
+			'Font Size',
+			'Message font size'))
+
+		# padding
+		t_padding = title.add_section('padding', 'Title padding')
+		m_padding = message.add_section('padding', 'Message font padding')
+
+		t_padding.add_option(IntegerOption('left',
+			15,
+			'Left',
+			'Title left padding'))
+		m_padding.add_option(IntegerOption('left',
+			40,
+			'Left',
+			'Message left padding'))
+		t_padding.add_option(IntegerOption('right',
+			5,
+			'Right',
+			'Title right padding'))
+		m_padding.add_option(IntegerOption('right',
+			5,
+			'Right',
+			'Message right padding'))
+		t_padding.add_option(IntegerOption('upper',
+			4,
+			'Upper',
+			'Title upper padding'))
+		m_padding.add_option(IntegerOption('upper',
+			0,
+			'Upper',
+			'Message upper padding'))
+		t_padding.add_option(IntegerOption('lower',
+			0,
+			'Lower',
+			'Title lower padding'))
+		m_padding.add_option(IntegerOption('lower',
+			10,
+			'Lower',
+			'Message lower padding'))
 
 
+
+
+class DefaultMumblesOutput(MumblesOutputPlugin):
+
+	plugin_name = "DefaultMumblesOutput"
+
+	def __init__(self, session_bus, options = None, verbose = False):
+		MumblesOutputPlugin.__init__(self, session_bus, options, verbose)
+
+		# keep track of how many notices deep we are
+		self._n_index = 0
+
+		# keep track of how many active notices there are
+		self._n_active = 0
+
+		self._click_handlers = {}
+
+		# keep track of last notification vertical placement
+		self._current_y = 0
+
+		self._theme = DefaultMumblesOutputTheme(self.get_option('theme'))
+
+	def init_options(self):
+		self.add_option(IntegerOption('placement',
+			CONFIG_NOTIFY_PLACEMENT_RIGHT,
+			'Placement',
+			'Screen placement of the notifications'))
+
+		self.add_option(IntegerOption('direction',
+			CONFIG_NOTIFY_DIRECTION_DOWN,
+			'Direction',
+			'Stacking direction of the notifications'))
+
+		self.add_option(IntegerOption('duration',
+			10,
+			'Duration',
+			'Duration of the notifications'))
+
+		self.add_option(TextOption('theme',
+			'default',
+			'Theme',
+			'Notification theme'))
+		
 	def add_click_handler(self, plugin_name, click_handler):
-		self.__click_handlers[plugin_name] = click_handler
+		self._click_handlers[plugin_name] = click_handler
 
 	def clicked(self, widget, event, plugin_name = None):
 		try:
-			self.__click_handlers[plugin_name](widget, event, plugin_name)
+			self._click_handlers[plugin_name](widget, event, plugin_name)
 		except:
 			if event.button == 3:
 				self.close(widget.window);
@@ -263,7 +261,7 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
 		cr.clip()
 
-		if self.__alpha_available:
+		if self._alpha_available:
 			cr.set_source_rgba(0.0, 0.0, 0.0, 0.0)
 		else:
 			cr.set_source_rgb(0.0, 0.0, 0.0)
@@ -271,9 +269,9 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		background_image = os.path.join(THEMES_DIR_USER, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
+		background_image = os.path.join(THEMES_DIR_USER, self.get_option('theme'), 'bground.png')
 		if not os.path.isfile(background_image):
-			background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
+			background_image = os.path.join(THEMES_DIR, self.get_option('theme'), 'bground.png')
 		if not os.path.isfile(background_image):
 			background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
 
@@ -286,25 +284,25 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 			cr.set_source_pixbuf(pixbuf, 0, 0)
 			cr.paint()
 		else:
-			cr.rectangle(0, 0, self.options.get_option(CONFIG_MT, 'width'), self.options.get_option(CONFIG_MT, 'height'))
+			cr.rectangle(0, 0, self._theme.get_option('width'), self._theme.get_option('height'))
 			cr.fill()
 
 		# add plugin image
 		if not image:
 			image = os.path.join(UI_DIR, 'mumbles.png')
-		plugin_image = gtk.gdk.pixbuf_new_from_file_at_size(image, self.options.get_option(CONFIG_MT, 'icon_width'), self.options.get_option(CONFIG_MT, 'icon_height'))
+		plugin_image = gtk.gdk.pixbuf_new_from_file_at_size(image, self._theme.get_option('icon/width'), self._theme.get_option('icon/height'))
 		if plugin_image:
-			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option(CONFIG_MT, 'icon_x_pos'), self.options.get_option(CONFIG_MT, 'icon_y_pos'))
+			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self._theme.get_option('icon/xpos'), self._theme.get_option('icon/ypos'))
 
 		cr.reset_clip()
 
 		# add the title
-		text_title_width = self.options.get_option(CONFIG_MT, 'text_title_width')
-		text_title_height = self.options.get_option(CONFIG_MT, 'text_title_height')
-		text_title_padding_left = self.options.get_option(CONFIG_MT, 'text_title_padding_left')
-		text_title_padding_right = self.options.get_option(CONFIG_MT, 'text_title_padding_right')
-		text_title_padding_upper = self.options.get_option(CONFIG_MT, 'text_title_padding_upper')
-		text_title_padding_lower = self.options.get_option(CONFIG_MT, 'text_title_padding_lower')
+		text_title_width = self._theme.get_option('text/title/width')
+		text_title_height = self._theme.get_option('text/title/height')
+		text_title_padding_left = self._theme.get_option('text/title/padding/left')
+		text_title_padding_right = self._theme.get_option('text/title/padding/right')
+		text_title_padding_upper = self._theme.get_option('text/title/padding/upper')
+		text_title_padding_lower = self._theme.get_option('text/title/padding/lower')
 
 		left_edge = (0 + text_title_padding_left)
 		upper_edge = (0 + text_title_padding_upper)
@@ -316,8 +314,8 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		p_layout_title.set_width((right_edge - left_edge) * pango.SCALE)
 
 		p_fdesc = pango.FontDescription()
-		p_fdesc.set_family_static(self.options.get_option(CONFIG_MT, 'text_title_font'))
-		p_fdesc.set_size(self.options.get_option(CONFIG_MT, 'text_title_size') * pango.SCALE)
+		p_fdesc.set_family_static(self._theme.get_option('text/title/font/family'))
+		p_fdesc.set_size(self._theme.get_option('text/title/font/size') * pango.SCALE)
 		p_fdesc.set_weight(pango.WEIGHT_BOLD)
 
 		p_layout_title.set_font_description(p_fdesc)
@@ -327,19 +325,19 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.clip()
 		cr.move_to(left_edge, upper_edge)
 
-		c = self.convert_hex_to_rgb(self.options.get_option(CONFIG_MT, 'text_title_color'))
+		c = self.convert_hex_to_rgb(self._theme.get_option('text/title/font/color'))
 		cr.set_source_rgba(c[0], c[1], c[2])
 		cr.show_layout(p_layout_title)
 
 		cr.reset_clip()
 
 		# add the message
-		text_message_width = self.options.get_option(CONFIG_MT, 'text_message_width')
-		text_message_height = self.options.get_option(CONFIG_MT, 'text_message_height')
-		text_message_padding_left = self.options.get_option(CONFIG_MT, 'text_message_padding_left')
-		text_message_padding_right = self.options.get_option(CONFIG_MT, 'text_message_padding_right')
-		text_message_padding_upper = self.options.get_option(CONFIG_MT, 'text_message_padding_upper')
-		text_message_padding_lower = self.options.get_option(CONFIG_MT, 'text_message_padding_lower')
+		text_message_width = self._theme.get_option('text/message/width')
+		text_message_height = self._theme.get_option('text/message/height')
+		text_message_padding_left = self._theme.get_option('text/message/padding/left')
+		text_message_padding_right = self._theme.get_option('text/message/padding/right')
+		text_message_padding_upper = self._theme.get_option('text/message/padding/upper')
+		text_message_padding_lower = self._theme.get_option('text/message/padding/lower')
 
 		left_edge = (0 + text_message_padding_left)
 		upper_edge = (text_message_padding_upper + text_title_height) # here start the top edge at the bottom of the title
@@ -351,8 +349,8 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		p_layout_message.set_width((right_edge - left_edge) * pango.SCALE)
 
 		p_fdesc = pango.FontDescription()
-		p_fdesc.set_family(self.options.get_option(CONFIG_MT, 'text_message_font'))
-		p_fdesc.set_size(self.options.get_option(CONFIG_MT, 'text_message_size') * pango.SCALE)
+		p_fdesc.set_family(self._theme.get_option('text/message/font/family'))
+		p_fdesc.set_size(self._theme.get_option('text/message/font/size') * pango.SCALE)
 		p_fdesc.set_weight(pango.WEIGHT_BOLD)
 
 		p_layout_message.set_font_description(p_fdesc)
@@ -365,7 +363,7 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.set_source_rgba(1, 1, 1)
 		cr.show_layout(p_layout_message)
 
-		c = self.convert_hex_to_rgb(self.options.get_option(CONFIG_MT, 'text_message_color'))
+		c = self.convert_hex_to_rgb(self._theme.get_option('text/message/font/color'))
 		cr.set_source_rgba(c[0], c[1], c[2])
 		cr.show_layout(p_layout_message)
 
@@ -377,15 +375,15 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		screen = widget.get_screen()
 		try:
 			colormap = screen.get_rgba_colormap()
-			self.__alpha_available = True
+			self._alpha_available = True
 		except:
 			colormap = None
 
 		if colormap == None:
-			self.__alpha_available = False
+			self._alpha_available = False
 			try:
 				colormap = screen.get_rgb_colormap()
-				self.__alpha_available = False
+				self._alpha_available = False
 			except:
 				colormap = None
 
@@ -403,22 +401,18 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		try:
 			# decrease number of active windows if it's still visible
 			if win.window.is_visible():
-				self.__n_active -= 1
+				self._n_active -= 1
 			win.window.destroy()
 		except:
 			# decrease number of active windows
-			self.__n_active -= 1
+			self._n_active -= 1
 			win.hide()
 
 		# if number of active windows is back to 0, reset starting point
-		if self.__n_active == 0:
-			self.__n_index = 0
+		if self._n_active == 0:
+			self._n_index = 0
 
-	def ReceivedNotification(self):
-		print "HERE!!"
-    
 	def alert(self, alert_object):
-
 		plugin_name = alert_object.get_name()
 		name = alert_object.get_title()
 		message = alert_object.get_msg()
@@ -435,7 +429,7 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		win.connect('screen-changed', self.screen_changed)
 
 		try:
-			win.connect('button-press-event', self.__click_handlers[plugin_name], plugin_name)
+			win.connect('button-press-event', self._click_handlers[plugin_name], plugin_name)
 		except:
 			win.connect('button-press-event', self.clicked)
 
@@ -449,56 +443,56 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 
 		# initialize for the current display
 		self.screen_changed(win)
-		win.resize( self.options.get_option(CONFIG_MT, 'width'),
-			self.options.get_option(CONFIG_MT, 'height'))
+		win.resize( self._theme.get_option('width'),
+			self._theme.get_option('height'))
 
 		# adjust window position by direction and placement
 		# preferences and how many notifications are active
-		spacing = self.options.get_option(CONFIG_MT, 'spacing')
+		spacing = self._theme.get_option('spacing')
 
-		notify_height = self.options.get_option(CONFIG_MT, 'height')
+		notify_height = self._theme.get_option('height')
 
 		try:
-			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
+			cur_direction =  self.get_option('direction')
 		except:
-			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_direction'))
+			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.get_option('direction'))
 			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
 
 		if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
 
-			if self.__n_index == 0:
+			if self._n_index == 0:
 				new_y = PANEL_HEIGHT
 			else:
-				new_y = self.__current_y + notify_height + spacing
+				new_y = self._current_y + notify_height + spacing
 
 		else:
-			if self.__n_index == 0:
+			if self._n_index == 0:
 				new_y = gtk.gdk.screen_height() - notify_height - PANEL_HEIGHT
 			else:
-				new_y = self.__current_y - notify_height - spacing
+				new_y = self._current_y - notify_height - spacing
 
-		self.__current_y = new_y
+		self._current_y = new_y
 
 		try:
-			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
+			cur_placement = self.get_option('placement')
 		except:
-			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.options.get_option(CONFIG_MN,'notification_placement'))
+			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.get_option('placement'))
 			cur_placement = CONFIG_NOTIFY_PLACEMENT_RIGHT
 		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
-			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
+			new_x = (gtk.gdk.screen_width()-self._theme.get_option('width')-spacing)
 		else:
 			new_x = spacing 
 		win.move(new_x, new_y)
 
 		# increase number of active notifications
-		self.__n_index += 1
-		self.__n_active += 1
+		self._n_index += 1
+		self._n_active += 1
 
 		# show window for a defined about of time
 		try:
-			cur_duration = int(self.options.get_option(CONFIG_MN, 'notification_duration'))
+			cur_duration = self.get_option('duration')
 		except:
-			print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
+			print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.get_option('duration'))
 			cur_duration = 5
 		source_id = gobject.timeout_add(cur_duration*1000, self.close_alert, win)
 

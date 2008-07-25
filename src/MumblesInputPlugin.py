@@ -20,7 +20,6 @@ class MumblesInputPlugin(MumblesPlugin):
 
 	alert_object = None
 
-
 	def __init__(self, session_bus, options = None, verbose = False):
 
 		self.session_bus = session_bus
@@ -55,19 +54,19 @@ class MumblesInputPlugin(MumblesPlugin):
 
 
 	def _get_icon_by_name(self, icon_name):
+
+		if os.path.isfile(icon_name):
+			return icon_name
+
 		if not self.icons[icon_name]:
 			return None
 
-		icon = os.path.join(PLUGIN_DIR_INPUT_USER, 'icons', self.icons[icon_name])
-		if os.path.isfile(icon):
-			return icon
+		for type_path in (PLUGIN_DIR_INPUT_USER,
+			PLUGIN_DIR_INPUT_CORE,
+			PLUGIN_DIR_INPUT_THIRDPARTY):
 
-		icon = os.path.join(PLUGIN_DIR_INPUT_CORE, 'icons', self.icons[icon_name])
-		if os.path.isfile(icon):
-			return icon
-
-		icon = os.path.join(PLUGIN_DIR_INPUT_THIRDPARTY, 'icons', self.icons[icon_name])
-		if os.path.isfile(icon):
-			return icon
+			icon = os.path.join(type_path, 'icons', self.icons[icon_name])
+			if os.path.isfile(icon):
+				return icon
 
 		return None

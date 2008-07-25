@@ -15,7 +15,7 @@ __doc__ = 'A default plugin for mumbles'
 __version__ = '0.1'
 
 setup(
-	name='GenericMumbles',
+	name='GenericMumblesInput',
 	version=__version__,
 	description=__doc__,
 	author=__author__,
@@ -23,11 +23,11 @@ setup(
 	package_dir={'generic':'src'},
 	entry_points='''
 	[mumbles.plugins]
-	GenericMumbles = generic:GenericMumbles
+	GenericMumblesInput = generic:GenericMumblesInput
 	'''
 )
 
 # copy egg file to plugin directory
-copy("dist/GenericMumbles-%s-py%d.%d.egg" %(__version__,sys.version_info[0],sys.version_info[1]), "../../")
+copy("dist/GenericMumblesInput-%s-py%d.%d.egg" %(__version__,sys.version_info[0],sys.version_info[1]), "../../")
 
 

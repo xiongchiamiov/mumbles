@@ -67,7 +67,8 @@ class Mumbles(object):
 
 	def __init__(self):
 		self.__bus = None
-		self.__plugins = {}
+		self.__plugins = {PLUGIN_TYPE_INPUT:{}, PLUGIN_TYPE_OUTPUT:{}}
+		self.__available_plugins = {PLUGIN_TYPE_INPUT:{}, PLUGIN_TYPE_OUTPUT:{}}
 		self.__panel_glade = PANEL_GLADE_FILE
 		self.__preferences_glade = PREFERENCES_GLADE_FILE
 		self.__options = None
@@ -115,7 +116,7 @@ class Mumbles(object):
 		self.__options.set_option(CONFIG_M, 'growl_network_password', self.__encrypt(self.__preferences.get_widget('entry_growl_password').get_text()))
 
 		self.__options.save()
-		#to-do: handle plugin options update here
+		#TODO: handle plugin options update here
 		#self.__mumbles_notify.set_options(self.__options)
 		self.__growl_server.update(self.__options.get_option(CONFIG_M, 'growl_network_enabled'), self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password')))
 
@@ -208,15 +209,11 @@ class Mumbles(object):
 	def __menu_quit_activate(self, widget):
 		self.__loop.quit()
 
-	def __load_mumbles_plugins(self, plugin_type, dirlist):
-
-		if True:
-		#try:
+	def __get_available_plugins(self, plugin_type, dirlist):
+		try:
 			for d in dirlist:
 				pkg_resources.working_set.add_entry(d)
 			pkg_env = pkg_resources.Environment(dirlist)
-			if not plugin_type in self.__plugins:
-				self.__plugins[plugin_type] = {}
 
 			for name in pkg_env:
 				egg = pkg_env[name][0]
@@ -224,28 +221,89 @@ class Mumbles(object):
 				for name in egg.get_entry_map(ENTRY_POINT):
 					entry_point = egg.get_entry_info(ENTRY_POINT, name)
 					plugin_cls = entry_point.load()
+					self.__available_plugins[plugin_type][name] = plugin_cls
 
-					if True:
+		except Exception, e:
+			if self.__verbose:
+				print "Error: Unable to load plugins %s" %(e)
+
+
+	def __load_mumbles_plugins(self, plugin_type, dirlist):
+
+		if True:
+		#try:
+
+			# init list of plugins available
+			self.__get_available_plugins(plugin_type, dirlist)
+
+			# get plugin options from the xml
+			config_options = {}
+			section = self.__options.get_section('plugins/'+plugin_type)
+			for s in section.get_sections():
+				name = s.get_description()
+				if name not in config_options:
+					config_options[name] = {}
+				id = s.get_id()
+				config_options[name][id] = s
+
+			# get plugin mappings from the xml
+			if plugin_type == PLUGIN_TYPE_OUTPUT:
+				map_list = {}
+				map_section = self.__options.get_section('plugins/maps')
+				for ins in map_section.get_sections():
+					input_id = ins.get_id()
+					if input_id not in map_list:
+						map_list[input_id] = []
+					for outs in ins.get_sections():
+						output_id = outs.get_id()
+						if output_id not in map_list[input_id]:
+							map_list[input_id].append(output_id)
+
+
+			for plugin_name, plugin_cls in self.__available_plugins[plugin_type].iteritems():
+
+				# if there are no options from the xml, use the plugin defaults
+				# TODO - disable these
+				if plugin_name not in config_options:
+					config_options[plugin_name] = {0: None}
+
+				for index, opts in config_options[plugin_name].iteritems():
+
 					#try:
-						opts =  self.__options.get_options()
-						plugin = plugin_cls(self.__bus, options= opts, verbose = self.__verbose)
-						if plugin_type == PLUGIN_TYPE_OUTPUT:
-							input_plugins = self.__plugins[PLUGIN_TYPE_INPUT]
-							for name, input in input_plugins.iteritems():
-								input.attach_output_plugin(plugin)
-
-						tmp = self.__plugins[plugin_type]
-						tmp[plugin.get_name()] = plugin
+					if True:
+						plugin_cls = self.__available_plugins[plugin_type][plugin_name]
+						plugin = plugin_cls(self.__bus, options=opts, verbose=self.__verbose)
 
 						if self.__verbose:
-							print "Successfully loaded %s plugin" %(plugin.get_name())
-					#except:
-						#if self.__verbose:
-							#print "Warning: Unable to load plugin for %s" %(name)
-							#print "\t %s for value: %s" %(sys.exc_info()[:2])
+							print "Processing plugin %s:" %(plugin.get_name())
+
+						# attach output plugings to our inputs
+						if plugin_type == PLUGIN_TYPE_OUTPUT and plugin.is_enabled():
+							input_plugins = self.__plugins[PLUGIN_TYPE_INPUT]
+							for name, inputs in input_plugins.iteritems():
+								for input in inputs:
+									# check that this input plugin
+									# is enabled and mapped to this output
+									if input.get_id() is not None and input.is_enabled():
+										if plugin.get_id() in map_list[input.get_id()]:
+											input.attach_output_plugin(plugin)
+
+						# add plugin to our list
+						p_name = plugin.get_name()
+						if p_name not in self.__plugins[plugin_type]:
+							self.__plugins[plugin_type][p_name] = []
+						self.__plugins[plugin_type][p_name].append(plugin)
+
+						if self.__verbose:
+							if plugin.is_enabled():
+								print "Successfully loaded\n"
+							else:
+								print "Not enabled\n"
+					#except KeyError:
+						#print "Error: No available plugin %s found." %(plugin_name)
 		#except:
 			#if self.__verbose:
-				#print "Error: Unable to load plugins"
+				#print "Warning: Unable to load plugin for %s" %(name)
 				#print "\t %s for value: %s" %(sys.exc_info()[:2])
 
 	# at least it's better than plain text...
@@ -257,9 +315,11 @@ class Mumbles(object):
 
 	def __decrypt(self, enc_pass):
 		ret = ''
-		for i in range(len(enc_pass)): 
-				ret += chr(ord(enc_pass[i])-i-1)
+		if enc_pass:
+			for i in range(len(enc_pass)): 
+					ret += chr(ord(enc_pass[i])-i-1)
 		return ret
+
 
 
 	def __get_widget_by_name(self, glade_file, name, signals=None):
@@ -301,72 +361,57 @@ class Mumbles(object):
 
 		check_password = False;
 
+		# create mumbles main options handler
+		# loaded with defaults
 		self.__options = MumblesOptions()
-		if os.path.isfile(self.__options.filename):
-			# if config file exists, load it
+
+		# if config file exists, load it
+		# if no config file exists, attempt to create
+		# one and use the defaults from MumblesOptions
+		if os.path.isfile(self.__options.get_filename()):
 			self.__options.load()
 		else:
-			# if no config file create one
-			# using defaults from MumblesOptions
-			self.__options.create_file(self.__options.options)
-
-		# convert boolean values to integers
-		try:
-			self.__options.set_option(CONFIG_M, 'verbose', int(self.__options.get_option(CONFIG_M, 'verbose')))
-		except:
-			self.__options.set_option(CONFIG_M, 'verbose', 0)
-			if self.__verbose:
-				print "Warning: Unable to set option for verbose. Falling back to default value."
-		try:
-			self.__options.set_option(CONFIG_M, 'daemon', int(self.__options.get_option(CONFIG_M, 'daemon')))
-		except:
-			self.__options.set_option(CONFIG_M, 'daemon', 0)
-			if self.__verbose:
-				print "Warning: Unable to set option for daemon. Falling back to default value."
-
-		try:
-			self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__options.get_option(CONFIG_M, 'growl_network_enabled')))
-		except:
-			self.__options.set_option(CONFIG_M, 'growl_network_enabled', 0)
-			if self.__verbose:
-				print "Warning: Unable to set option for growl network enabled. Falling back to default value."
+			self.__options.init_default_plugins()
+			self.__options.create_file()
 
 		self.__themes = self.__get_themes()
 
-        	if argv is None:
-                	argv = sys.argv
-        	try:
+		if argv is None:
+			argv = sys.argv
+
+		try:
 			try:
 				opts, args = getopt.getopt(
 					sys.argv[1:],
-					"hdvgpx",
-					["help", "daemon", "verbose", "enable-growl-network", "password", "disable-growl-network"])
+					"hdv",
+					["help", "daemon", "verbose"])
+					#"hdvgpx",
+					#["help", "daemon", "verbose", "enable-growl-network", "password", "disable-growl-network"])
 			except getopt.GetoptError:
-                               	raise Usage()
+				raise Usage()
 
 			for o, a in opts:
 				if o in ("-h", "--help"):
 					raise Usage('help')
 				elif o in ("-v", "--verbose"):
-					self.__options.set_option(CONFIG_M, 'verbose', 1)
+					self.__options.set_option('mumbles/verbose', 1)
 				elif o in ("-d", "--daemon"):
-					self.__options.set_option(CONFIG_M, 'daemon', 1)
-				elif o in ("-g", "--enable-growl-network"):
-					self.__options.set_option(CONFIG_M, 'growl_network_enabled', 1)
-				elif o in ("-p", "--password"):
-					check_password = True;
-				elif o in ("-x", "--disable-growl-network"):
-					self.__options.set_option(CONFIG_M, 'growl_network_enabled', 0)
+					self.__options.set_option('mumbles/daemon', 1)
+				#elif o in ("-g", "--enable-growl-network"):
+					#self.__options.set_enabled('networking/growl', True)
+				#elif o in ("-p", "--password"):
+					#check_password = True;
+				#elif o in ("-x", "--disable-growl-network"):
+					#self.__options.set_enabled('networking/growl', False)
 				else:
 					raise Usage()
-        	except Usage, err:
-                	print >> sys.stderr, err.msg
-                	return 2
+		except Usage, err:
+			print >> sys.stderr, err.msg
+			return 2
 
 		self.__verbose = False
 		try:
-			if int(self.__options.get_option(CONFIG_M, 'verbose')):
-				self.__verbose = True
+			self.__verbose = self.__options.get_option('mumbles/verbose')
 		except:
 			self.__verbose = False
 
@@ -377,7 +422,6 @@ class Mumbles(object):
 				print "Error: DBus appears to not be running."
 			return False
 
-
 		# create callback to load plugin when its service is started
 		#dbus_object = self.__bus.get_object(DBUS_NAME, DBUS_OBJECT)
 		#self.__dbus_iface = dbus.Interface(dbus_object, DBUS_NAME)
@@ -387,11 +431,10 @@ class Mumbles(object):
 		dirlist = [PLUGIN_DIR_INPUT_CORE, PLUGIN_DIR_INPUT_THIRDPARTY, PLUGIN_DIR_INPUT_USER]
 		self.__load_mumbles_plugins(PLUGIN_TYPE_INPUT, dirlist)
 
-		#to-do: add user dir
-		dirlist = [PLUGIN_DIR_OUTPUT_CORE, PLUGIN_DIR_OUTPUT_THIRDPARTY]
+		dirlist = [PLUGIN_DIR_OUTPUT_CORE, PLUGIN_DIR_OUTPUT_THIRDPARTY, PLUGIN_DIR_OUTPUT_USER]
 		self.__load_mumbles_plugins(PLUGIN_TYPE_OUTPUT, dirlist)
 
-		if not self.__options.get_option(CONFIG_M, 'daemon'):
+		if not self.__options.get_option('mumbles/daemon'):
 			self.__create_panel_applet()
 		elif self.__verbose:
 			print "Starting Mumbles in daemon mode"
@@ -399,9 +442,11 @@ class Mumbles(object):
 		self.__loop = gobject.MainLoop()
 		gobject.threads_init()
 
+		# TODO move to input plugin
+		'''
 		# setup growl network handler
 		passwd = None
-		passwd = self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password'))
+		passwd = self.__decrypt(self.__options.get_option('networking/growl/password'))
 		if check_password:
 			passwd = getpass()
 		# start growl network listener
@@ -410,10 +455,15 @@ class Mumbles(object):
 		self.__growl_thread.setDaemon(True)
 		self.__growl_thread.start()
 
-		if self.__options.get_option(CONFIG_M, 'growl_network_enabled'):
+		if self.__options.is_enabled('networking/growl'):
 			if self.__verbose:
 				print "Starting Growl Network Support..."
 			self.__growl_server.update(True, passwd)
+		'''
+
+
+		print "DEBUG"
+		#self.__options.print_content()
 
 		if self.__verbose:
 			print "Mumbles is Listening..."

@@ -41,7 +41,7 @@ class FirefoxMumbles(MumblesInputPlugin):
  		self.alert()
 
  	def onClick(self, widget, event, plugin_name):
-		# to-do: make clikc handler work again
+		#TODO: make click handler work again
 		pass
 
 		'''

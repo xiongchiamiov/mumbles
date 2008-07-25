@@ -9,33 +9,47 @@
 from MumblesGlobals import *
 from OptionsHandler import *
 
-class MumblesOptions(OptionsHandler):
+class MumblesOptions(OptionsFileHandler):
+
+	_daemon = 0
+	_verbose = 0
 
 	def __init__(self):
-		OptionsHandler.__init__(self)
-		self.options = {}
-		self.options[CONFIG_M] = {
-				# show/don't show debug messages 
-				'verbose' : 0,
+		OptionsFileHandler.__init__(self)
 
-				# run in deamon mode
-				'daemon' : 0,
+		# General Settings 
+		mumbles = self.add_section('mumbles', 'Mumbles Settings')
+		mumbles.add_option(BooleanOption('daemon',
+			self._daemon,
+			'Show in panel',
+			'Use mumbles panel applet'))
+		mumbles.add_option(BooleanOption('verbose',
+			self._verbose,
+			'Verbose',
+			'Run mumbles in verbose mode'))
 
-				# enable growl network handling
-				'growl_network_enabled' : 0,
+		plugins = self.add_section('plugins', 'Mumbles Plugins')
+		inputs = plugins.add_section('inputs', 'Mumbles Input Plugins')
+		outputs = plugins.add_section('outputs', 'Mumbles Output Plugins')
+		mapping = plugins.add_section('mapping', 'Mumbles Plugin Mappings')
 
-				# growl network handling password
-				'growl_network_enabled' : ''
-		}
-		self.options[CONFIG_MN] = {
-				# placement and direction of notifications
-				'notification_placement' : CONFIG_NOTIFY_PLACEMENT_RIGHT,
-				'notification_direction' : CONFIG_NOTIFY_DIRECTION_DOWN,
+	def init_default_plugins(self):
+		# Inputs
+		inputs = self.get_section('plugins/inputs')
+		generic = inputs.add_section(name='input', description='GenericMumblesInput', id=0)
+		generic.set_enabled(True)
 
-				# how long to show the notifications (seconds)
-				'notification_duration' : 5,
+		# Outputs
+		outputs = self.get_section('plugins/outputs')
+		sp = outputs.add_section(name='output', description='SimplePrintMumblesOutput', id=0)
+		sp.set_enabled(True)
+		sp.add_option(BooleanOption('advanced',
+			True,
+			'Advanced',
+			'Detailed Simple Print Output'))
 
-				# theme directory
-				'theme' : 'default'
-		}
-
+		# TODO add mapping helper function to do this bit automatically
+		# Mapping
+		maps = self.get_section('plugins/maps')
+		generic_in = maps.add_section(name='input', description='', id=0)
+		generic_out = generic_in.add_section(name='output', description='', id=0)

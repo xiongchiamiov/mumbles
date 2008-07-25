@@ -212,10 +212,11 @@ class growlIncoming(SocketServer.DatagramRequestHandler):
 
 	def handle(self):
 
+		p = None
 		if self.server.active:
 			p = GrowlPacket(self.rfile.read(), self.server.password)
 
-		if p.valid:
+		if p and p.valid:
 			if p.type() == 'NOTIFY':
 				notification,title,description,app = p.info()   
 

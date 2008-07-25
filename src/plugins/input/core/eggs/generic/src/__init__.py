@@ -9,9 +9,9 @@
 from MumblesInputPlugin import *
 import dbus
 
-class GenericMumbles(MumblesInputPlugin):
+class GenericMumblesInput(MumblesInputPlugin):
 
-	plugin_name = "GenericMumbler"
+	plugin_name = "GenericMumblesInput"
 
 	dbus_interface = "org.mumblesproject.Mumbles"
 	dbus_path = "/org/mumblesproject/Mumbles"

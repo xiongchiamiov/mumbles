@@ -9,9 +9,9 @@
 from MumblesInputPlugin import *
 import dbus
 
-class RhythmboxMumbles(MumblesInputPlugin):
+class RhythmboxMumblesInput(MumblesInputPlugin):
 
-	plugin_name = "RhythmboxMumbles"
+	plugin_name = "RhythmboxMumblesInput"
 
 	dbus_interface = "org.gnome.Rhythmbox.Player"
 	dbus_path = "/org/gnome/Rhythmbox/Player"
