@@ -1,0 +1,49 @@
+<?xml version="1.0" ?>
+<mumbles-options>
+	<mumbles>
+		<daemon type="boolean">
+			0
+		</daemon>
+		<verbose type="boolean">
+			0
+		</verbose>
+	</mumbles>
+	<plugins>
+		<inputs>
+			<input enabled="1" id="0" name="GenericMumblesInput"/>
+			<input enabled="1" id="1" name="RhythmboxMumblesInput"/>
+		</inputs>
+		<outputs>
+			<output enabled="1" id="100" name="SimplePrintMumblesOutput">
+				<advanced type="boolean">1</advanced>
+			</output>
+			<output enabled="1" id="101" name="DefaultMumblesOutput">
+				<placement type="integer">1</placement>
+				<direction type="integer">0</direction>
+				<duration type="integer">5</duration>
+				<theme type="text">default</theme>
+			</output>
+			<output enabled="1" id="102" name="RSSMumblesOutput">
+				<title type="text">mumbles</title>
+				<description type="text">a mumbles rss feed</description>
+				<location type="text">/home/user/.mumbles/mumbles_rss.xml</location>
+				<maxitems type="integer">10</maxitems>
+			</output>
+			<output enabled="1" id="103" name="SQLiteMumblesOutput">
+				<location type="text">/home/user/.mumbles/mumbles_sqlite.db</location>
+			</output>
+		</outputs>
+		<maps>
+			<input id="0">
+				<output id="100"/>
+				<output id="101"/>
+				<output id="102"/>
+				<output id="103"/>
+			</input>
+			<input id="1">
+				<output id="100"/>
+				<output id="101"/>
+			</input>
+		</maps>
+	</plugins>
+</mumbles-options>
