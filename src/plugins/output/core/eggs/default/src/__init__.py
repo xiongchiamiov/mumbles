@@ -71,6 +71,22 @@ class DefaultMumblesOutputTheme(OptionsFileHandler):
 			10,
 			'Spacing',
 			'Notification spacing'))
+		self.add_option(TextOption('image',
+			'bground.png',
+			'Background Image',
+			'Background Image'))
+		self.add_option(BooleanOption('use_system_colors',
+			True,
+			'Use Sytem Colors',
+			'Use the default system colors'))
+		self.add_option(TextOption('color',
+			'#000',
+			'Background Color',
+			'Background Color'))
+		self.add_option(IntegerOption('transparency',
+			50,
+			'Transparency',
+			'Percentage Transparent'))
 
 		# icon options
 		icon = self.add_section('icon', 'Icon options')
@@ -233,26 +249,6 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 			if event.button == 3:
 				self.close(widget.window);
 
-	def convert_hex_to_rgb(self, hex_color):
-		if hex_color[0] == '#':
-			hex_color = hex_color[1:]
-		if len(hex_color) != 6:
-			if len(hex_color) != 3:
-				err = "Color #%s is not in #rrggbb or #rgb format" %(hex_color)
-				raise ValueError, err
-			else:
-				hex_color = hex_color[0]*2+hex_color[1]*2+hex_color[2]*2
-
-		ret = []
-		r = hex_color[:2]
-		g = hex_color[2:4]
-		b = hex_color[4:]
-
-		for c in (r, g, b):
-			ret.append((int(c, 16) / 255.0))
-
-		return ret
-
 	def expose(self, widget, event, title, message, image):
 
 		cr = widget.window.cairo_create()
@@ -261,21 +257,34 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
 		cr.clip()
 
-		if self._alpha_available:
-			cr.set_source_rgba(0.0, 0.0, 0.0, 0.0)
+		if self._theme.get_option('use_system_colors'):
+			theme_style = gtk.Invisible().get_style()
+			background_color = theme_style.bg[gtk.STATE_NORMAL]
 		else:
-			cr.set_source_rgb(0.0, 0.0, 0.0)
+			background_color = gtk.gdk.color_parse(self._theme.get_option('color'))
+
+		if self._alpha_available:
+			# divide by max color (as float) to get correct value in 0-1 range
+			cr.set_source_rgba(background_color.red / 65535.0,
+				background_color.green / 65535.0,
+				background_color.blue / 65535.0,
+				((100 - self._theme.get_option('transparency'))/100.0))
+		else:
+			cr.set_source_color(background_color)
 
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		background_image = os.path.join(THEMES_DIR_USER, self.get_option('theme'), 'bground.png')
-		if not os.path.isfile(background_image):
-			background_image = os.path.join(THEMES_DIR, self.get_option('theme'), 'bground.png')
-		if not os.path.isfile(background_image):
-			background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
+		background_image = None
+		theme_background_image_name = self._theme.get_option('image')
+		if theme_background_image_name:
+			background_image = os.path.join(THEMES_DIR_USER, self.get_option('theme'), theme_background_image_name)
+			if not os.path.isfile(background_image):
+				background_image = os.path.join(THEMES_DIR, self.get_option('theme'), theme_background_image_name)
+			if not os.path.isfile(background_image):
+				background_image = os.path.join(THEMES_DIR, 'default', theme_background_image_name)
 
-		if os.path.exists(background_image):
+		if background_image is not None and os.path.exists(background_image):
 			pixbuf = gtk.gdk.pixbuf_new_from_file(background_image)
 		else:
 			pixbuf = None
@@ -325,8 +334,8 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.clip()
 		cr.move_to(left_edge, upper_edge)
 
-		c = self.convert_hex_to_rgb(self._theme.get_option('text/title/font/color'))
-		cr.set_source_rgba(c[0], c[1], c[2])
+		c = gtk.gdk.color_parse(self._theme.get_option('text/title/font/color'))
+		cr.set_source_color(c)
 		cr.show_layout(p_layout_title)
 
 		cr.reset_clip()
@@ -363,8 +372,8 @@ class DefaultMumblesOutput(MumblesOutputPlugin):
 		cr.set_source_rgba(1, 1, 1)
 		cr.show_layout(p_layout_message)
 
-		c = self.convert_hex_to_rgb(self._theme.get_option('text/message/font/color'))
-		cr.set_source_rgba(c[0], c[1], c[2])
+		c = gtk.gdk.color_parse(self._theme.get_option('text/message/font/color'))
+		cr.set_source_color(c)
 		cr.show_layout(p_layout_message)
 
 		return False
