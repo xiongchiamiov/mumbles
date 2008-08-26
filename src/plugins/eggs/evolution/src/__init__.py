@@ -26,7 +26,7 @@ class EvolutionMumbles(MumblesPlugin):
     # Note this function takes 2 parameters (mumbles_notify and
     # session_bus) that we will hand off to our
     # MumblesPlugin parent class
-    def __init__(self, mumbles_notify, session_bus):
+    def __init__(self, mumbles_notify, session_bus, some_int=None):
 
         # Here, we tell our plugin to connect the dbus signal
         # 'Newmail' to our plugin class's 'NewMail' function
