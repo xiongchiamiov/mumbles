@@ -26,7 +26,7 @@ class EvolutionMumbles(MumblesPlugin):
     # Note this function takes 2 parameters (mumbles_notify and
     # session_bus) that we will hand off to our
     # MumblesPlugin parent class
-    def __init__(self, mumbles_notify, session_bus, some_int=None):
+    def __init__(self, mumbles_notify, session_bus):
 
         # Here, we tell our plugin to connect the dbus signal
         # 'Newmail' to our plugin class's 'NewMail' function
@@ -40,7 +40,7 @@ class EvolutionMumbles(MumblesPlugin):
     # NewMail function
     # This will get called when a NewMail signal is received on the DBus from Evolution
     # Note the function takes 2 parameters (the two we saw in the dbus-monitor activity)
-    def NewMail(self, mbox_path, folder_name):
+    def NewMail(self, mbox_path, folder_name, some_int=None):
 
         # Get our icon using the key we used above when configuring our icons dictionary
         icon = self.get_icon('evolution')
