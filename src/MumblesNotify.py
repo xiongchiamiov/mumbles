@@ -6,6 +6,9 @@
 #
 #------------------------------------------------------------------------
 
+import math
+import time
+
 import os
 import pango
 import cairo
@@ -154,6 +157,13 @@ class MumblesNotify(object):
 		# keep track of last notification vertical placement
 		self.__current_y = 0
 
+		self.visible = {} # keep track of visible mumbles
+		self.win_placement = {} # keep track of visible mumble placement for sliding
+		self.slide_tracking = {}
+		
+		self.timeout_list = {}
+		self.paused = False
+
 	def set_options(self, new_options):
 		self.options.add_options(new_options)
 		theme_name = self.options.get_option(CONFIG_MN, 'theme')
@@ -215,7 +225,7 @@ class MumblesNotify(object):
 			self.__click_handlers[plugin_name](widget, event, plugin_name)
 		except:
 			if event.button == 3:
-				self.close(widget.window);
+				self.close(widget); # don't remove widget.window >_<
 
 	def convert_hex_to_rgb(self, hex_color):
 		if hex_color[0] == '#':
@@ -275,7 +285,11 @@ class MumblesNotify(object):
 			image = os.path.join(UI_DIR, 'mumbles.png')
 		plugin_image = gtk.gdk.pixbuf_new_from_file(image)
 		if plugin_image:
+			new_image = plugin_image.scale_simple(28, 28, gtk.gdk.INTERP_BILINEAR)  # FIX THIS TO BE CONFIGURED IN THE THEME (instead of hardcoded)
+			if not new_image: print 'ONOES WE ARE OUT OF MEMORY'
+			else: plugin_image = new_image
 			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option(CONFIG_MT, 'icon_x_pos'), self.options.get_option(CONFIG_MT, 'icon_y_pos'))
+			 
 
 		cr.reset_clip()
 
@@ -377,28 +391,238 @@ class MumblesNotify(object):
 
 	def close(self, win):
 		self.close_alert(win)
+
+	def close_timeout(self, win):
+		if not win in self.visible: return
+		self.visible[win] -= 1
+		if not self.visible[win] < 1: return
+		self.close_alert(win)
+		self.close_cleanup()
+	
+	def close_cleanup(self):
+		try:
+			v_slide = int(self.options.get_option(CONFIG_MN,'vertical_sliding_enabled'))
+		except:
+			print 'Warning: Invalid value of %s for vertical_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'vertical_sliding_enabled'))
+			v_slide = 0
+
+		if not v_slide or not self.win_placement: return
+
+		# adjust window position by direction and placement
+		# preferences and how many notifications are active
+		spacing = self.options.get_option(CONFIG_MT, 'spacing')
+
+		notify_height = self.options.get_option(CONFIG_MT, 'height')
+
+		try:
+			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
+		except:
+			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_direction'))
+			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
+
+		try:
+			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
+		except:
+			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.options.get_option(CONFIG_MN,'notification_placement'))
+			cur_placement = CONFIG_NOTIFY_PLACEMENT_RIGHT
+
+
+		temp_placement = {}
+		for win in self.win_placement:
+			temp_placement[self.win_placement[win]] = win
+		keysort = temp_placement.keys()
+		keysort.sort()
+
+
+		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
+			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
+		else:
+			new_x = spacing
+
+		max_i = 0
+
+		for n_index in keysort:
+			win = temp_placement[n_index]
+			if n_index == 0 or not n_index == self.win_placement[win]: continue
+			for i in xrange(n_index):
+				if not i in self.win_placement.values():
+					max_i = max(i, max_i)
+					if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
+						if i == 0:
+							new_y = PANEL_HEIGHT
+						else:
+							new_y = PANEL_HEIGHT + (notify_height + spacing) * i
+					else:
+						if i == 0:
+							new_y = gtk.gdk.screen_height() - (notify_height + spacing + PANEL_HEIGHT)
+						else:
+							new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (i+1) + PANEL_HEIGHT)
+					self.smooth_move(win, new_x, new_y, inc=10)
+					self.win_placement[win] = i
+					break
+		if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
+			if max_i == 0:
+				new_y = PANEL_HEIGHT
+			else:
+				new_y = PANEL_HEIGHT + (notify_height + spacing) * i
+		else:
+			if max_i == 0:
+				new_y = gtk.gdk.screen_height() - (notify_height + spacing + PANEL_HEIGHT)
+			else:
+				new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (i+1) + PANEL_HEIGHT)
+		self.__current_y = new_y
+		#self.__n_index = max_i
+		#self.__n_active = max_i
 	
 	def close_alert(self, win):
-		# if time out was triggered, destroy the gtk.Window
-		# otherwise, handling event call back from gtk.gdk.Window, so temporarily hide it
+		if not win in self.visible: return
+		
 		try:
-			# decrease number of active windows if it's still visible
-			if win.window.is_visible():
-				self.__n_active -= 1
-			win.window.destroy()
+			h_slide = int(self.options.get_option(CONFIG_MN,'horizontal_sliding_enabled'))
 		except:
-			# decrease number of active windows
-			self.__n_active -= 1
-			win.hide()
+			print 'Warning: Invalid value of %s for horizontal_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'horizontal_sliding_enabled'))
+			h_slide = 0
+		
+		# if time out was triggered, destroy the gtk.Window
+		# otherwise, handling event call back from gtk.gdk.Window, so temporarily hide it # we don't need to anymore because it keeps track in self.visible
+		#try:
+		#	# decrease number of active windows if it's still visible
+		#	if win.window.is_visible():
+		#		self.__n_active -= 1
+		#	if h_slide: self.close_slide_out(win)
+		#	else: self.destroy(win)
+		#except:
+		#	# decrease number of active windows
+		#	self.__n_active -= 1
+		#	#win.hide()
+		#	if h_slide: self.close_slide_out(win)
+		#	else: self.destroy(win)
+		# decrease number of active windows
+		self.__n_active -= 1
+		# slide out or close
+		if h_slide: self.close_slide_out(win)
+		else: self.destroy(win)
+		if win in self.win_placement: del self.win_placement[win]
 
 		# if number of active windows is back to 0, reset starting point
 		if self.__n_active == 0:
 			self.__n_index = 0
+	
+	def close_slide_out(self, win):
+		try:
+			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
+		except:
+			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.options.get_option(CONFIG_MN,'notification_placement'))
+			cur_placement = CONFIG_NOTIFY_PLACEMENT_RIGHT
+		x, y = win.get_position()
+		xs, ys = win.get_size()
+		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
+			xm = x + xs
+		else:
+			xm = x - xs
+		self.slide_tracking[win] = -1
+		self.smooth_move(win, xm, y, callback=self.destroy, track=-1)
+	
+	def destroy(self, win):
+		win.window.destroy()
+		if win in self.win_placement: del self.win_placement[win]
+		del self.visible[win]
 
-    
-	def alert(self, plugin_name, name, message, image=None):
+	def replace_alert(self, win, plugin_name, name, message, image=None, click_handler=None):
+		if not win in self.visible: return self.alert(plugin_name, name, message, image, click_handler)
+		win.connect('expose-event', self.expose, name, message, image)
+		self.visible[win] += 1
+
+		# show window for a defined about of time
+		#try: cur_duration = int(self.options.get_option(CONFIG_MN, 'notification_duration'))
+		#except:
+		#	print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
+		#	cur_duration = 5
+		self.init_close_timeout(win)
+		#source_id = gobject.timeout_add(cur_duration*1000, self.close_timeout, win)
+
+		win.queue_draw() # tell the widget to be redrawn
+		return win
+	
+	def smooth_move(self, win, dest_x, dest_y, inc=50, callback=None, track=0):
+		x, y = win.get_position()
+		if dest_x == x and dest_y == y: return
+		#win.move(x, y)
+		gobject.timeout_add(20, self.move_timeout, win, (dest_x, dest_y), track, 50, callback)
+	
+	def move_timeout(self, win, coords, track=0, inc=50, callback=None):
+		if not win in self.visible: return
+		if not win in self.slide_tracking:
+			self.slide_tracking[win] = 0
+		else:
+			if track == 0 and not self.slide_tracking[win] == -1:
+				self.slide_tracking[win] += 1
+				track = self.slide_tracking[win]
+			elif not track == self.slide_tracking[win]: return # there's a newer slide taking place
+		dx, dy = coords
+		x, y = win.get_position()
+		if abs(dx-x) < 100 and abs(dy-y) < 100:
+			inc = inc/1.3
+		if x < dx:
+			if x+inc < dx: x += inc
+			else: x = dx
+		elif x > dx:
+			if x-inc > dx: x -= inc
+			else: x = dx
+		if y < dy:
+			if y+inc < dy: y += inc
+			else: y = dy
+		elif y > dy:
+			if y-inc > dy: y -= inc
+			else: y = dy
+		win.move(int(x), int(y))
+		if dx == x and dy == y:
+			if win in self.slide_tracking:
+				if track == self.slide_tracking[win]:
+					del self.slide_tracking[win]
+			if callback: callback(win)
+			return
+		gobject.timeout_add(20, self.move_timeout, win, (dx, dy), track, inc, callback)
+	
+	def pause(self):
+		now = time.time()*1000
+		for win in self.visible:
+			self.visible[win] += 1
+		for win in self.timeout_list:
+			self.timeout_list[win] = abs(self.timeout_list[win]-now)
+	
+	def resume(self):
+		now = time.time()*1000
+		for win in self.timeout_list:
+			self.timeout_list[win] += now
+			gobject.timeout_add(int(self.timeout_list[win]), self.close_timeout, win)
+	
+	def init_close_timeout(self, win):
+		now = time.time()*1000
+		try:
+			cur_duration = int(self.options.get_option(CONFIG_MN, 'notification_duration'))
+		except:
+			print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
+			cur_duration = 5
+		timeout = cur_duration*1000
+		if self.paused:
+			self.timeout_list[win] = timeout
+		else:
+			gobject.timeout_add(timeout, self.close_timeout, win)
+			self.timeout_list[win] = now+timeout
+
+	def alert(self, plugin_name, name, message, image=None, click_handler=None, widget=None):
+		# figure out whether we are replacing the window or making a new one
+		replacing = False
+		if widget:
+			if hasattr(widget, 'get_position'):
+				if widget in self.visible:
+					replacing = True
+					print replacing
+
 		# setup window
-		win = gtk.Window(gtk.WINDOW_TOPLEVEL)
+		#win = gtk.Window(gtk.WINDOW_TOPLEVEL)
+		win = gtk.Window(gtk.WINDOW_POPUP)
 
 		win.set_title('Mumbles')
 		win.add_events(gtk.gdk.BUTTON_PRESS_MASK)
@@ -408,7 +632,10 @@ class MumblesNotify(object):
 		win.connect('screen-changed', self.screen_changed)
 
 		try:
-			win.connect('button-press-event', self.__click_handlers[plugin_name], plugin_name)
+			if click_handler:
+				win.connect('button-press-event', click_handler, plugin_name)
+			else:
+				win.connect('button-press-event', self.__click_handlers[plugin_name], plugin_name)
 		except:
 			win.connect('button-press-event', self.clicked)
 
@@ -422,6 +649,7 @@ class MumblesNotify(object):
 
 		# initialize for the current display
 		self.screen_changed(win)
+		width = self.options.get_option(CONFIG_MT, 'width')
 		win.resize( self.options.get_option(CONFIG_MT, 'width'),
 			self.options.get_option(CONFIG_MT, 'height'))
 
@@ -438,6 +666,7 @@ class MumblesNotify(object):
 			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
 
 		if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
+			y_start = 0
 
 			if self.__n_index == 0:
 				new_y = PANEL_HEIGHT
@@ -445,12 +674,14 @@ class MumblesNotify(object):
 				new_y = self.__current_y + notify_height + spacing
 
 		else:
+			y_start = gtk.gdk.screen_height() - notify_height - PANEL_HEIGHT
 			if self.__n_index == 0:
 				new_y = gtk.gdk.screen_height() - notify_height - PANEL_HEIGHT
 			else:
 				new_y = self.__current_y - notify_height - spacing
 
-		self.__current_y = new_y
+		if not replacing:
+			self.__current_y = new_y
 
 		try:
 			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
@@ -460,22 +691,51 @@ class MumblesNotify(object):
 		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
 			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
 		else:
-			new_x = spacing 
-		win.move(new_x, new_y)
+			new_x = spacing
+		if replacing:
+			null_x, new_y = widget.get_position()
+			
+		try:
+			h_slide = int(self.options.get_option(CONFIG_MN,'horizontal_sliding_enabled'))
+		except:
+			print 'Warning: Invalid value of %s for horizontal_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'horizontal_sliding_enabled'))
+			h_slide = 0
+		
+		try:
+			v_slide = int(self.options.get_option(CONFIG_MN,'vertical_sliding_enabled'))
+		except:
+			print 'Warning: Invalid value of %s for vertical_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'vertical_sliding_enabled'))
+			v_slide = 0
+		
+		if h_slide:
+			if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
+				win.move(new_x+width, new_y)
+			else:
+				win.move(new_x-width, new_y)
+		else:
+			win.move(new_x, new_y)
+		
 
 		# increase number of active notifications
-		self.__n_index += 1
-		self.__n_active += 1
+		n_index = self.__n_index
+		if not replacing:
+			self.__n_index += 1
+			self.__n_active += 1
 
 		# show window for a defined about of time
-		try:
-			cur_duration = int(self.options.get_option(CONFIG_MN, 'notification_duration'))
-		except:
-			print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
-			cur_duration = 5
-		source_id = gobject.timeout_add(cur_duration*1000, self.close_alert, win)
+		#try:
+		#	cur_duration = int(self.options.get_option(CONFIG_MN, 'notification_duration'))
+		#except:
+		#	print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
+		#	cur_duration = 5
+		#source_id = gobject.timeout_add(cur_duration*1000, self.close_timeout, win)
+		self.init_close_timeout(win)
 
 		# finally show (and trigger the expose event)
+		self.visible[win] = 1 # number of timeouts
+		self.win_placement[win] = n_index
 		win.show_all()
+		#if replacing: widget.hide()
+		if h_slide: self.smooth_move(win, new_x, new_y)
 
-		return True
+		return win

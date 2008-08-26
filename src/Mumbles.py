@@ -7,6 +7,7 @@
 #
 #------------------------------------------------------------------------
 
+import traceback
 import os
 import getopt 
 import sys
@@ -114,6 +115,9 @@ class Mumbles(object):
 
 		self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__preferences.get_widget('check_growl_network').get_active()))
 		self.__options.set_option(CONFIG_M, 'growl_network_password', self.__encrypt(self.__preferences.get_widget('entry_growl_password').get_text()))
+		
+		self.__options.set_option(CONFIG_MN, 'horizontal_sliding_enabled', int(self.__preferences.get_widget('check_horizontal_sliding').get_active()))
+		self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', int(self.__preferences.get_widget('check_vertical_sliding').get_active()))
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
@@ -189,6 +193,20 @@ class Mumbles(object):
 				print "Warning: Unable to set option for growl network enabled. Falling back to default value."
 		passwd = self.__decrypt(self.__options.get_option(CONFIG_M, 'growl_network_password'))
 		self.__preferences.get_widget('entry_growl_password').set_text(passwd)
+		
+		
+		try:
+			self.__preferences.get_widget('check_horizontal_sliding').set_active(int(self.__options.get_option(CONFIG_MN, 'horizontal_sliding_enabled')))
+		except:
+			self.__preferences.get_widget('check_horizontal_sliding').set_active(0)
+			if self.__verbose:
+				print "Warning: Unable to set option for horizontal sliding. Falling back to default value."
+		try:
+			self.__preferences.get_widget('check_vertical_sliding').set_active(int(self.__options.get_option(CONFIG_MN, 'vertical_sliding_enabled')))
+		except:
+			self.__preferences.get_widget('check_vertical_sliding').set_active(0)
+			if self.__verbose:
+				print "Warning: Unable to set option for vertical sliding enabled. Falling back to default value."
 
 
 	def __about_close(self, widget, event=None):
@@ -230,9 +248,15 @@ class Mumbles(object):
 							print "Successfully loaded %s plugin" %(plugin.get_name())
 					except:
 						if self.__verbose:
+							print '-'*40
+							print traceback.format_exc()
+							print '-'*40
 							print "Warning: Unable to load plugin for %s" %(name)
 		except:
 			if self.__verbose:
+				print '-'*40
+				print traceback.format_exc()
+				print '-'*40
 				print "Error: Unable to load plugins"
 
 	# at least it's better than plain text...
@@ -317,6 +341,21 @@ class Mumbles(object):
 			self.__options.set_option(CONFIG_M, 'growl_network_enabled', 0)
 			if self.__verbose:
 				print "Warning: Unable to set option for growl network enabled. Falling back to default value."
+		
+		try:
+			self.__options.set_option(CONFIG_MN, 'horizontal_sliding_enabled', int(self.__options.get_option(CONFIG_MN, 'horizontal_sliding_enabled')))
+		except:
+			self.__options.set_option(CONFIG_MN, 'horizontal_sliding_enabled', 0)
+			if self.__verbose:
+				print "Warning: Unable to set option for horizontal sliding. Falling back to default value."
+
+		try:
+			self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', int(self.__options.get_option(CONFIG_MN, 'vertical_sliding_enabled')))
+		except:
+			self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', 0)
+			if self.__verbose:
+				print "Warning: Unable to set option for vertical sliding. Falling back to default value."
+
 
 		self.__themes = self.__get_themes()
 

@@ -12,7 +12,7 @@ from shutil import copy
 
 __author__ = 'dot_j <dot_j@mumbles-project.org>'
 __doc__ = 'A simple pidgin plugin for mumbles'
-__version__ = '0.1'
+__version__ = '0.2'
 
 setup(
 	name='PidginMumbles',

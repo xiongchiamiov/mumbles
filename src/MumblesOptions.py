@@ -31,6 +31,10 @@ class MumblesOptions(OptionsHandler):
 				# placement and direction of notifications
 				'notification_placement' : CONFIG_NOTIFY_PLACEMENT_RIGHT,
 				'notification_direction' : CONFIG_NOTIFY_DIRECTION_DOWN,
+				
+				# effects
+				'horizontal_sliding_enabled': 0,
+				'vertical_sliding_enabled': 0,
 
 				# how long to show the notifications (seconds)
 				'notification_duration' : 5,
