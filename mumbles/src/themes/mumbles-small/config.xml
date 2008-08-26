@@ -1,0 +1,43 @@
+<mumbles-theme name='mumbles-small' version='1.0'>
+	<width>150</width>
+	<height>48</height>
+	<spacing>5</spacing>
+	<icon>
+		<x_pos>5</x_pos>
+		<y_pos>17</y_pos>
+                <width>10</width>
+                <height>10</height>
+	</icon>
+	<text>
+		<title>
+			<font>
+				<family>Free Sans</family>
+				<color>#fff</color>
+				<size>8</size>
+			</font>
+			<width>150</width>
+			<height>10</height>
+			<padding>
+				<left>5</left>
+				<right>3</right>
+				<upper>5</upper>
+				<lower>1</lower>
+			</padding>
+		</title>
+		<message>
+			<font>
+				<family>Free Sans</family>
+				<color>#fff</color>
+				<size>6</size>
+			</font>
+			<width>150</width>
+			<height>38</height>
+			<padding>
+				<left>30</left>
+				<right>3</right>
+				<upper>7</upper>
+				<lower>10</lower>
+			</padding>
+		</message>
+	</text>
+</mumbles-theme>
