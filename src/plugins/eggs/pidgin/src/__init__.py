@@ -43,7 +43,6 @@ class PidginMumbles(MumblesPlugin):
 
 
 	def BuddyStatusChanged(self, buddy, old_status, status):
-		return # this would get annoying
 		if buddy != 0:
 			pidgin_interface = self.get_pidgin_interface()
 
