@@ -22,7 +22,6 @@ class PidginMumbles(MumblesPlugin):
 	dbus_path = "/im/pidgin/purple/PurpleObject"
 
 	dbus_name = "im.pidgin.purple.PurpleService"
-	pidgin_interface = None
 	
 	# Configure our plugin icons
 	icons = {'pidgin' : 'pidgin.png', 'irc' : 'irc.png'}
@@ -44,74 +43,109 @@ class PidginMumbles(MumblesPlugin):
 
 
 	def BuddyStatusChanged(self, buddy, old_status, status):
-
-		if buddy:
+		if buddy != 0:
 			pidgin_interface = self.get_pidgin_interface()
 
-			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
 			osts = pidgin_interface.PurpleStatusGetName(old_status)
 			nsts = pidgin_interface.PurpleStatusGetName(status)
-			
-			title = name
-			message = 'Change the status from '+osts+' to '+nsts
-			icon = self.get_buddy_icon(buddy, pidgin_interface)
-			self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+
+			if osts != nsts:
+				name = pidgin_interface.PurpleBuddyGetAlias(buddy)
+				message = 'Change the status from '+osts+' to '+nsts
+				icon = self.get_buddy_icon(pidgin_interface, buddy)
+
+				self.pidgin_notify(name, message, icon)
 
 		
 	def BuddySignedOn(self, buddy):
-
-		if buddy:
+		if buddy != 0:
 			pidgin_interface = self.get_pidgin_interface()
-			
-			title = name
+
+			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
 			message = 'Signed on'
-			icon = self.get_buddy_icon(buddy, pidgin_interface)
-			self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+			icon = self.get_buddy_icon(pidgin_interface, buddy)
+
+			self.pidgin_notify(name, message, icon)
 
 		
 	def BuddySignedOff(self, buddy):
-
-		if buddy:
+		if buddy != 0:
 			pidgin_interface = self.get_pidgin_interface()
 			
-			title = name
+			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
 			message = 'Signed off'
-			icon = self.get_buddy_icon(buddy, pidgin_interface)
-			self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+			icon = self.get_buddy_icon(pidgin_interface, buddy)
+
+			self.pidgin_notify(name, message, icon)
 		
 
 	def ReceivedImMsg(self, account, name, message, conversation, flags):
-
 		pidgin_interface = self.get_pidgin_interface()
-		key = pidgin_interface.PurpleConversationHasFocus(conversation)
+	
+		#TODO figure out if the pidgin window is in focus
+		has_focus = pidgin_interface.PurpleConversationHasFocus(conversation)
 
-		if not key or True:
-
+		if has_focus != 0:
 			buddy = pidgin_interface.PurpleFindBuddy(account, name)
-			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
 
-			title = self.unescape(name)
-			message = self.unescape(self.striphtml(message))
-			icon = self.get_buddy_icon(buddy, pidgin_interface)
-			self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+			if buddy != 0:
+				name = pidgin_interface.PurpleBuddyGetAlias(buddy)
+				icon = self.get_buddy_icon(pidgin_interface, buddy)
+
+				self.pidgin_notify(name, message, icon)
 
 	def ReceivedChatMsg(self, account, name, message, conversation, flags):
 
 		pidgin_interface = self.get_pidgin_interface()
-		key = pidgin_interface.PurpleConversationHasFocus(conversation)
 
-		if not key or True:
+		#TODO figure out if the pidgin window is in focus
+		has_focus = pidgin_interface.PurpleConversationHasFocus(conversation)
 
+		if has_focus != 0:
 			chatroom_name = pidgin_interface.PurpleConversationGetTitle(conversation)
 			chat_data = pidgin_interface.PurpleConversationGetChatData(conversation)
 
 			chat_nick = pidgin_interface.PurpleConvChatGetNick(chat_data)
 
 			if name != chat_nick:
-				title = self.unescape(chatroom_name+": "+name)
-				message = self.unescape(self.striphtml(message))
-				icon = self.get_buddy_icon(buddy, pidgin_interface)
+				title = chatroom_name+": "+name
+				icon = self.get_buddy_icon(pidgin_interface)
 				self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+
+
+
+	def clean(self, s):
+		s = re.compile('<[^>]+>').sub(' ',s)
+		s = s.replace("&lt;", "<")
+		s = s.replace("&gt;", ">")
+		s = s.replace("&apos;", "'")
+		s = s.replace("&quot;", '"')
+		# this has to be last:
+		s = s.replace("&amp;", "&")
+		return s
+
+
+	def pidgin_notify(self, title, message, icon):
+		title = self.clean(title)
+		message = self.clean(message)
+		self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+
+
+	def get_pidgin_interface(self):
+		pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
+		return dbus.Interface(pidgin_object, self.dbus_interface)
+
+
+	def get_buddy_icon(self, pidgin_interface, buddy = 0):
+		icon = 0
+		if buddy != 0:
+			stp1 = pidgin_interface.PurpleBuddyGetIcon(buddy)
+			if stp1 != 0:
+				icon = pidgin_interface.PurpleBuddyIconGetFullPath(stp1)
+		if icon == 0:
+			icon = self.get_icon('pidgin')
+
+		return icon
 
 
 	'''
@@ -133,32 +167,6 @@ class PidginMumbles(MumblesPlugin):
 		return launcher
 	'''
 
-	def striphtml(self, message):
-		return re.compile('<[^>]+>').sub(' ',message)
 
-	def unescape(self, s):
-		s = s.replace("&lt;", "<")
-		s = s.replace("&gt;", ">")
-		s = s.replace("&apos;", "'")
-		s = s.replace("&quot;", '"')
-		# this has to be last:
-		s = s.replace("&amp;", "&")
-		return s
-
-	def get_pidgin_interface(self):
-		pidgin_object = self.session_bus.get_object(self.dbus_name, self.dbus_path)
-		return dbus.Interface(pidgin_object, self.dbus_interface)
-
-	def get_buddy_icon(self, buddy, pidgin_interface):
-
-		icon = None
-		if buddy:
-			stp1 = pidgin_interface.PurpleBuddyGetIcon(buddy)
-			if stp1:
-				icon = pidgin_interface.PurpleBuddyIconGetFullPath(stp1)
-		if not icon:
-			icon = self.get_icon('pidgin')
-
-		return icon
 
 
