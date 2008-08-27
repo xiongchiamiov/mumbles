@@ -82,8 +82,9 @@ class PidginMumbles(MumblesPlugin):
 	def ReceivedImMsg(self, account, name, message, conversation, flags):
 		pidgin_interface = self.get_pidgin_interface()
 	
-		#TODO figure out if the pidgin window is in focus
-		has_focus = pidgin_interface.PurpleConversationHasFocus(conversation)
+		#TODO figure out if the pidgin window is in focus (not just the conversation)
+		#has_focus = pidgin_interface.PurpleConversationHasFocus(conversation)
+		has_focus = 1
 
 		if has_focus != 0:
 			buddy = pidgin_interface.PurpleFindBuddy(account, name)
@@ -98,8 +99,9 @@ class PidginMumbles(MumblesPlugin):
 
 		pidgin_interface = self.get_pidgin_interface()
 
-		#TODO figure out if the pidgin window is in focus
-		has_focus = pidgin_interface.PurpleConversationHasFocus(conversation)
+		#TODO figure out if the pidgin window is in focus (not just the conversation)
+		#has_focus = pidgin_interface.PurpleConversationHasFocus(conversation)
+		has_focus = 1
 
 		if has_focus != 0:
 			chatroom_name = pidgin_interface.PurpleConversationGetTitle(conversation)
@@ -110,7 +112,7 @@ class PidginMumbles(MumblesPlugin):
 			if name != chat_nick:
 				title = chatroom_name+": "+name
 				icon = self.get_buddy_icon(pidgin_interface)
-				self.mumbles_notify.alert(self.plugin_name, title, message, icon)
+				self.pidgin_notify(name, message, icon)
 
 
 
