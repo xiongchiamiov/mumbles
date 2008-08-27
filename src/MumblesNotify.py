@@ -161,6 +161,9 @@ class MumblesNotify(object):
 		self.win_placement = {} # keep track of visible mumble placement for sliding
 		self.slide_tracking = {}
 		
+		
+		self.offscreen = []
+		
 		self.timeout_list = {}
 		self.paused = False
 
@@ -457,7 +460,11 @@ class MumblesNotify(object):
 							new_y = gtk.gdk.screen_height() - (notify_height + spacing + PANEL_HEIGHT)
 						else:
 							new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (i+1) + PANEL_HEIGHT)
-					self.smooth_move(win, new_x, new_y, inc=10)
+					self.smooth_move(win, new_x, new_y, inc=30)
+					if win in self.offscreen:
+						if not ((new_y + spacing) < 0 or (new_y + notify_height - spacing) > gtk.gdk.screen_height()):
+							self.offscreen.remove(win)
+							self.init_close_timeout(win)
 					self.win_placement[win] = i
 					break
 		if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
@@ -548,7 +555,7 @@ class MumblesNotify(object):
 		x, y = win.get_position()
 		if dest_x == x and dest_y == y: return
 		#win.move(x, y)
-		gobject.timeout_add(20, self.move_timeout, win, (dest_x, dest_y), track, 50, callback)
+		gobject.timeout_add(20, self.move_timeout, win, (dest_x, dest_y), track, inc, callback)
 	
 	def move_timeout(self, win, coords, track=0, inc=50, callback=None):
 		if not win in self.visible: return
@@ -594,8 +601,16 @@ class MumblesNotify(object):
 	def resume(self):
 		now = time.time()*1000
 		for win in self.timeout_list:
-			self.timeout_list[win] += now
 			gobject.timeout_add(int(self.timeout_list[win]), self.close_timeout, win)
+			self.timeout_list[win] += now
+	
+	def hovered(self, widget, event):
+		x, y = widget.get_position()
+		widget.move(x-10, y)
+	
+	def unhovered(self, widget, event):
+		x, y = widget.get_position()
+		widget.move(x+10, y)
 	
 	def init_close_timeout(self, win):
 		now = time.time()*1000
@@ -610,6 +625,8 @@ class MumblesNotify(object):
 		else:
 			gobject.timeout_add(timeout, self.close_timeout, win)
 			self.timeout_list[win] = now+timeout
+	
+	
 
 	def alert(self, plugin_name, name, message, image=None, click_handler=None, widget=None):
 		# figure out whether we are replacing the window or making a new one
@@ -638,6 +655,9 @@ class MumblesNotify(object):
 				win.connect('button-press-event', self.__click_handlers[plugin_name], plugin_name)
 		except:
 			win.connect('button-press-event', self.clicked)
+		
+		#win.connect('enter-notify-event', self.hovered)
+		#win.connect('leave-notify-event', self.unhovered)
 
 		win.set_app_paintable(True)
 		win.set_decorated(False)
@@ -729,7 +749,10 @@ class MumblesNotify(object):
 		#	print "Warning: Invalid value of %s for notification_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_duration'))
 		#	cur_duration = 5
 		#source_id = gobject.timeout_add(cur_duration*1000, self.close_timeout, win)
-		self.init_close_timeout(win)
+		if ((new_y + spacing) < 0 or (new_y + notify_height - spacing) > gtk.gdk.screen_height()) and v_slide:
+			self.offscreen.append(win)
+		else:
+			self.init_close_timeout(win)
 
 		# finally show (and trigger the expose event)
 		self.visible[win] = 1 # number of timeouts

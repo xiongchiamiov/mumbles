@@ -43,6 +43,7 @@ class PidginMumbles(MumblesPlugin):
 
 
 	def BuddyStatusChanged(self, buddy, old_status, status):
+		return # this would get annoying
 		if buddy != 0:
 			pidgin_interface = self.get_pidgin_interface()
 
@@ -51,7 +52,7 @@ class PidginMumbles(MumblesPlugin):
 
 			if osts != nsts:
 				name = pidgin_interface.PurpleBuddyGetAlias(buddy)
-				message = 'Change the status from '+osts+' to '+nsts
+				message = 'changed status from '+osts+' to '+nsts
 				icon = self.get_buddy_icon(pidgin_interface, buddy)
 
 				self.pidgin_notify(name, message, icon)
@@ -62,7 +63,7 @@ class PidginMumbles(MumblesPlugin):
 			pidgin_interface = self.get_pidgin_interface()
 
 			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
-			message = 'Signed on'
+			message = 'signed on'
 			icon = self.get_buddy_icon(pidgin_interface, buddy)
 
 			self.pidgin_notify(name, message, icon)
@@ -73,7 +74,7 @@ class PidginMumbles(MumblesPlugin):
 			pidgin_interface = self.get_pidgin_interface()
 			
 			name = pidgin_interface.PurpleBuddyGetAlias(buddy)
-			message = 'Signed off'
+			message = 'signed off'
 			icon = self.get_buddy_icon(pidgin_interface, buddy)
 
 			self.pidgin_notify(name, message, icon)
