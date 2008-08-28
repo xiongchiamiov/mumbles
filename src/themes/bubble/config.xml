@@ -1,0 +1,41 @@
+<mumbles-theme name='bubble' version='1.0'>
+	<width>250</width>
+	<height>90</height>
+	<spacing>5</spacing>
+	<icon>
+		<x_pos>22</x_pos>
+		<y_pos>50</y_pos>
+	</icon>
+	<text>
+		<title>
+			<font>
+				<family>Free Sans</family>
+				<color>#fff</color>
+				<size>12</size>
+			</font>
+			<width>250</width>
+			<height>20</height>
+			<padding>
+				<left>25</left>
+				<right>8</right>
+				<upper>15</upper>
+				<lower>2</lower>
+			</padding>
+		</title>
+		<message>
+			<font>
+				<family>Free Sans</family>
+				<color>#fff</color>
+				<size>8</size>
+			</font>
+			<width>250</width>
+			<height>60</height>
+			<padding>
+				<left>20</left>
+				<right>12</right>
+				<upper>10</upper>
+				<lower>35</lower>
+			</padding>
+		</message>
+	</text>
+</mumbles-theme>
