@@ -267,21 +267,31 @@ class MumblesNotify(object):
 
 		# Draw the background
 		background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
+		background_mask = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bgmask.png')
 		default_background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
+		default_background_mask = os.path.join(THEMES_DIR, 'default', 'bgmask.png')
 
+		maskpixbuf = None
 		if os.path.exists(background_image):
 			pixbuf = gtk.gdk.pixbuf_new_from_file(background_image)
+			if os.path.exists(background_mask): maskpixbuf = gtk.gdk.pixbuf_new_from_file(background_mask)
 		elif os.path.exists(default_background_image):
 			pixbuf = gtk.gdk.pixbuf_new_from_file(default_background_image)
+			if os.path.exists(default_background_mask): maskpixbuf = gtk.gdk.pixbuf_new_from_file(default_background_mask)
 		else:
 			pixbuf = None
 			
 		if pixbuf:
+			if maskpixbuf and not self.__alpha_available:
+				null, image_mask = maskpixbuf.render_pixmap_and_mask()
+				widget.window.shape_combine_mask(image_mask, 0, 0)
 			cr.set_source_pixbuf(pixbuf, 0, 0)
 			cr.paint()
 		else:
 			cr.rectangle(0, 0, self.options.get_option(CONFIG_MT, 'width'), self.options.get_option(CONFIG_MT, 'height'))
 			cr.fill()
+		
+		
 
 		# add plugin image
 		if not image:
@@ -292,7 +302,7 @@ class MumblesNotify(object):
 			if not new_image: print 'ONOES WE ARE OUT OF MEMORY'
 			else: plugin_image = new_image
 			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option(CONFIG_MT, 'icon_x_pos'), self.options.get_option(CONFIG_MT, 'icon_y_pos'))
-			 
+			
 
 		cr.reset_clip()
 
@@ -408,6 +418,12 @@ class MumblesNotify(object):
 		except:
 			print 'Warning: Invalid value of %s for vertical_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'vertical_sliding_enabled'))
 			v_slide = 0
+		
+		try:
+			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
+		except:
+			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_direction'))
+			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
 
 		if not v_slide or not self.win_placement: return
 
@@ -417,56 +433,20 @@ class MumblesNotify(object):
 
 		notify_height = self.options.get_option(CONFIG_MT, 'height')
 
-		try:
-			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
-		except:
-			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_direction'))
-			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
-
-		try:
-			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
-		except:
-			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.options.get_option(CONFIG_MN,'notification_placement'))
-			cur_placement = CONFIG_NOTIFY_PLACEMENT_RIGHT
-
-
 		temp_placement = {}
 		for win in self.win_placement:
 			temp_placement[self.win_placement[win]] = win
 		keysort = temp_placement.keys()
 		keysort.sort()
 
-
-		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
-			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
-		else:
-			new_x = spacing
-
 		max_i = 0
 
 		for n_index in keysort:
 			win = temp_placement[n_index]
 			if n_index == 0 or not n_index == self.win_placement[win]: continue
-			for i in xrange(n_index):
-				if not i in self.win_placement.values():
-					max_i = max(i, max_i)
-					if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
-						if i == 0:
-							new_y = PANEL_HEIGHT
-						else:
-							new_y = PANEL_HEIGHT + (notify_height + spacing) * i
-					else:
-						if i == 0:
-							new_y = gtk.gdk.screen_height() - (notify_height + spacing + PANEL_HEIGHT)
-						else:
-							new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (i+1) + PANEL_HEIGHT)
-					self.smooth_move(win, new_x, new_y, inc=30)
-					if win in self.offscreen:
-						if not ((new_y + spacing) < 0 or (new_y + notify_height - spacing) > gtk.gdk.screen_height()):
-							self.offscreen.remove(win)
-							self.init_close_timeout(win)
-					self.win_placement[win] = i
-					break
+			i = self.vslide_alert(win)
+			max_i = max(max_i, i)
+
 		if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
 			if max_i == 0:
 				new_y = PANEL_HEIGHT
@@ -480,6 +460,51 @@ class MumblesNotify(object):
 		self.__current_y = new_y
 		#self.__n_index = max_i
 		#self.__n_active = max_i
+	
+	def vslide_alert(self, win):
+		try:
+			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
+		except:
+			print "Warning: Invalid value of %s for notification_direction. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_direction'))
+			cur_direction = CONFIG_NOTIFY_DIRECTION_DOWN
+
+		try:
+			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
+		except:
+			print "Warning: Invalid value of %s for notification_placement. Falling back to default value." %(self.options.get_option(CONFIG_MN,'notification_placement'))
+			cur_placement = CONFIG_NOTIFY_PLACEMENT_RIGHT
+		
+		spacing = self.options.get_option(CONFIG_MT, 'spacing')
+		notify_height = self.options.get_option(CONFIG_MT, 'height')
+		
+		if cur_placement == CONFIG_NOTIFY_PLACEMENT_RIGHT:
+			new_x = (gtk.gdk.screen_width()-self.options.get_option(CONFIG_MT, 'width')-spacing)
+		else:
+			new_x = spacing
+			
+		n_index = self.win_placement[win]
+		for i in xrange(n_index):
+			if not i in self.win_placement.values():
+				self.win_placement[win] = i
+				if cur_direction == CONFIG_NOTIFY_DIRECTION_DOWN:
+					if i == 0:
+						new_y = PANEL_HEIGHT
+					else:
+						new_y = PANEL_HEIGHT + (notify_height + spacing) * i
+				else:
+					if i == 0:
+						new_y = gtk.gdk.screen_height() - (notify_height + spacing + PANEL_HEIGHT)
+					else:
+						new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (i+1) + PANEL_HEIGHT)
+				self.smooth_move(win, new_x, new_y, inc=30)
+				if win in self.offscreen:
+					if not ((new_y + spacing) < 0 or (new_y + notify_height - spacing) > gtk.gdk.screen_height()):
+						self.offscreen.remove(win)
+						self.init_close_timeout(win)
+				return i
+		x, new_y = win.get_position()
+		if not x == new_x: self.smooth_move(win, new_x, new_y)
+		return 0
 	
 	def close_alert(self, win):
 		if not win in self.visible: return
@@ -516,6 +541,7 @@ class MumblesNotify(object):
 			self.__n_index = 0
 	
 	def close_slide_out(self, win):
+		if win in self.win_placement: del self.win_placement[win]
 		try:
 			cur_placement = int(self.options.get_option(CONFIG_MN,'notification_placement'))
 		except:
@@ -565,7 +591,8 @@ class MumblesNotify(object):
 			if track == 0 and not self.slide_tracking[win] == -1:
 				self.slide_tracking[win] += 1
 				track = self.slide_tracking[win]
-			elif not track == self.slide_tracking[win]: return # there's a newer slide taking place
+			elif not track == self.slide_tracking[win]:
+				return # there's a newer slide taking place
 		dx, dy = coords
 		x, y = win.get_position()
 		if abs(dx-x) < 100 and abs(dy-y) < 100:
@@ -592,6 +619,7 @@ class MumblesNotify(object):
 		gobject.timeout_add(20, self.move_timeout, win, (dx, dy), track, inc, callback)
 	
 	def pause(self):
+		self.paused = True
 		now = time.time()*1000
 		for win in self.visible:
 			self.visible[win] += 1
@@ -599,6 +627,7 @@ class MumblesNotify(object):
 			self.timeout_list[win] = abs(self.timeout_list[win]-now)
 	
 	def resume(self):
+		self.paused = False
 		now = time.time()*1000
 		for win in self.timeout_list:
 			gobject.timeout_add(int(self.timeout_list[win]), self.close_timeout, win)
@@ -625,8 +654,6 @@ class MumblesNotify(object):
 		else:
 			gobject.timeout_add(timeout, self.close_timeout, win)
 			self.timeout_list[win] = now+timeout
-	
-	
 
 	def alert(self, plugin_name, name, message, image=None, click_handler=None, widget=None):
 		# figure out whether we are replacing the window or making a new one
@@ -759,6 +786,9 @@ class MumblesNotify(object):
 		self.win_placement[win] = n_index
 		win.show_all()
 		#if replacing: widget.hide()
-		if h_slide: self.smooth_move(win, new_x, new_y)
+		if h_slide:
+			if v_slide: self.smooth_move(win, new_x, new_y, callback=self.vslide_alert) #self.vslide_alert(win)
+			else: self.smooth_move(win, new_x, new_y)
+		elif v_slide: self.vslide_alert(win)
 
 		return win
