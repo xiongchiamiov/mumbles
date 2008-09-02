@@ -19,12 +19,12 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['libnotify'],
-	package_dir={'libnotify':'src'},
+	packages=['libnotifymumbles'],
+	package_dir={'libnotifymumbles':'src'},
 	package_data={'':['themes/libnotify.png']},
 	entry_points='''
 	[mumbles.plugins]
-	LibNotifyMumblesInput = libnotify:LibNotifyMumblesInput
+	LibNotifyMumblesInput = libnotifymumbles:LibNotifyMumblesInput
 	'''
 )
 
