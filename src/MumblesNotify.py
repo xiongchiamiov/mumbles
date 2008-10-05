@@ -296,7 +296,14 @@ class MumblesNotify(object):
 		# add plugin image
 		if not image:
 			image = os.path.join(UI_DIR, 'mumbles.png')
-		plugin_image = gtk.gdk.pixbuf_new_from_file(image)
+		try:
+			plugin_image = gtk.gdk.pixbuf_new_from_file(image)
+		except:
+			loader = gtk.gdk.PixbufLoader()
+			loader.write(image)
+			loader.close()
+			plugin_image = loader.get_pixbuf()
+
 		if plugin_image:
 			new_image = plugin_image.scale_simple(28, 28, gtk.gdk.INTERP_BILINEAR)  # FIX THIS TO BE CONFIGURED IN THE THEME (instead of hardcoded)
 			if not new_image: print 'ONOES WE ARE OUT OF MEMORY'
