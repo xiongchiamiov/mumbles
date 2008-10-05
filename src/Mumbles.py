@@ -248,16 +248,16 @@ class Mumbles(object):
 							print "Successfully loaded %s plugin" %(plugin.get_name())
 					except:
 						if self.__verbose:
+							print "Warning: Unable to load plugin for %s" %(name)
 							print '-'*40
 							print traceback.format_exc()
 							print '-'*40
-							print "Warning: Unable to load plugin for %s" %(name)
 		except:
 			if self.__verbose:
+				print "Error: Unable to load plugins"
 				print '-'*40
 				print traceback.format_exc()
 				print '-'*40
-				print "Error: Unable to load plugins"
 
 	# at least it's better than plain text...
 	def __encrypt(self, plain):
