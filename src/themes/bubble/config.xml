@@ -11,13 +11,13 @@
 			<font>
 				<family>Free Sans</family>
 				<color>#fff</color>
-				<size>12</size>
+				<size>10</size>
 			</font>
 			<width>250</width>
 			<height>20</height>
 			<padding>
 				<left>25</left>
-				<right>8</right>
+				<right>10</right>
 				<upper>15</upper>
 				<lower>2</lower>
 			</padding>
