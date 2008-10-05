@@ -31,7 +31,7 @@ class PidginMumbles(MumblesPlugin):
 		# signal connection config
 		# NOTE: comment out here to disable any of the features
 		self.signal_config = {
-			"BuddyStatusChanged": self.BuddyStatusChanged,
+			#"BuddyStatusChanged": self.BuddyStatusChanged,
 			"BuddySignedOn": self.BuddySignedOn,
 			"BuddySignedOff": self.BuddySignedOff,
 			"ReceivedImMsg": self.ReceivedImMsg,
