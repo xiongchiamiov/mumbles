@@ -19,7 +19,7 @@ class MumblesPlugin(object):
 		icons = {}
 		signal_confg = {}
 
-		def __init__(self, mumbles_notify, session_bus):
+		def __init__(self, mumbles_notify, session_bus, **kwargs):
 
 			self.mumbles_notify = mumbles_notify
 			self.session_bus = session_bus
@@ -29,7 +29,7 @@ class MumblesPlugin(object):
 					handler_function = call_back,
 					signal_name = signal,
 					dbus_interface = self.dbus_interface,
-					path = self.dbus_path)
+					path = self.dbus_path, **kwargs)
 
 		def get_name(self):
 			return self.plugin_name
