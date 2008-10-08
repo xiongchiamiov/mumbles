@@ -19,12 +19,12 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['rhythmbox'],
-	package_dir={'rhythmbox':'src'},
+	packages=['rhythmboxmumbles'],
+	package_dir={'rhythmboxmumbles':'src'},
 	package_data={'':['themes/rhythmbox.xpm']},
 	entry_points='''
 	[mumbles.plugins]
-	Rhythmbox = rhythmbox:RhythmboxMumbles
+	RhythmboxMumbles = rhythmboxmumbles:RhythmboxMumbles
 	'''
 )
 

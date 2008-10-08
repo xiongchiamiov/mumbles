@@ -19,12 +19,12 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['telepathy'],
-	package_dir={'telepathy':'src'},
+	packages=['telepathymumbles'],
+	package_dir={'telepathymumbles':'src'},
 	package_data={'':[]},
 	entry_points='''
 	[mumbles.plugins]
-	Telepathy = telepathy:TelepathyMumbles
+	TelepathyMumbles = telepathymumbles:TelepathyMumbles
 	'''
 )
 

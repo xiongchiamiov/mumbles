@@ -19,11 +19,11 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['mtwitter'],
-	package_dir={'mtwitter':'src'},
+	packages=['twittermumbles'],
+	package_dir={'twittermumbles':'src'},
 	entry_points='''
 	[mumbles.plugins]
-	TwitterMumbles = mtwitter:TwitterMumbles
+	TwitterMumbles = twittermumbles:TwitterMumbles
 	'''
 )
 

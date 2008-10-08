@@ -19,12 +19,12 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['pidgin'],
-	package_dir={'pidgin':'src'},
+	packages=['pidginmumbles'],
+	package_dir={'pidginmumbles':'src'},
 	package_data={'':['themes/pidgin.png', 'themes/irc.png']},
 	entry_points='''
 	[mumbles.plugins]
-	Pidgin = pidgin:PidginMumbles
+	PidginMumbles = pidginmumbles:PidginMumbles
 	'''
 )
 

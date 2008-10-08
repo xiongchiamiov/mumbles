@@ -19,11 +19,11 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['corefunc'],
-	package_dir={'corefunc':'src'},
+	packages=['corefuncmumbles'],
+	package_dir={'corefuncmumbles':'src'},
 	entry_points='''
 	[mumbles.plugins]
-	CoreFuncMumbles = corefunc:CoreFuncMumbles
+	CoreFuncMumbles = corefuncmumbles:CoreFuncMumbles
 	'''
 )
 

@@ -19,11 +19,11 @@ setup(
 	version=__version__,
 	description=__doc__,
 	author=__author__,
-	packages=['genericdbus'],
-	package_dir={'genericdbus':'src'},
+	packages=['genericdbusmumbles'],
+	package_dir={'genericdbusmumbles':'src'},
 	entry_points='''
 	[mumbles.plugins]
-	GenericDBUSMumbles = genericdbus:GenericDBUSMumbles
+	GenericDBUSMumbles = genericdbusmumbles:GenericDBUSMumbles
 	'''
 )
 
