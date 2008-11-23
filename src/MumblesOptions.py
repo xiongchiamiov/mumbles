@@ -35,6 +35,8 @@ class MumblesOptions(OptionsHandler):
 				# effects
 				'horizontal_sliding_enabled': 0,
 				'vertical_sliding_enabled': 0,
+				
+				'always_mask_enabled': 0,
 
 				# how long to show the notifications (seconds)
 				'notification_duration' : 5,

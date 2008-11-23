@@ -49,7 +49,7 @@ class Usage(Exception):
 		else:
 			self.msg = \
 				app+": Desktop notifications for the Gnome desktop.\n" \
-				"Copyright (C) 2007 dot_j <dot_j@mumbles-project.org>\n\n" \
+				"Copyright (C) 2008 dot_j <dot_j@mumbles-project.org>\n\n" \
 				"Usage: mumbles [options]\n\n" \
 				"-h, --help\n" \
 				"\tPrint a summary of the command-line usage of "+app+".\n" \
@@ -118,6 +118,8 @@ class Mumbles(object):
 		
 		self.__options.set_option(CONFIG_MN, 'horizontal_sliding_enabled', int(self.__preferences.get_widget('check_horizontal_sliding').get_active()))
 		self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', int(self.__preferences.get_widget('check_vertical_sliding').get_active()))
+		
+		self.__options.set_option(CONFIG_MN, 'always_mask_enabled', int(self.__preferences.get_widget('check_always_mask').get_active()))
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
@@ -126,6 +128,7 @@ class Mumbles(object):
 		self.__preferences_close(None)
 
 	def __preferences_close(self, widget, event=None):
+		self.__preferences = None
 		self.__preferences_window.hide()
 		return True
 
@@ -139,6 +142,9 @@ class Mumbles(object):
 		return True
 
 	def __menu_preferences_activate(self, widget):
+		if self.__preferences:
+			self.__preferences_window.present()
+			return
 
 		signals = {
 			"on_ok_clicked" : self.__preferences_ok,
@@ -206,7 +212,14 @@ class Mumbles(object):
 		except:
 			self.__preferences.get_widget('check_vertical_sliding').set_active(0)
 			if self.__verbose:
-				print "Warning: Unable to set option for vertical sliding enabled. Falling back to default value."
+				print "Warning: Unable to set option for vertical sliding. Falling back to default value."
+				
+		try:
+			self.__preferences.get_widget('check_always_mask').set_active(int(self.__options.get_option(CONFIG_MN, 'always_mask_enabled')))
+		except:
+			self.__preferences.get_widget('check_always_mask').set_active(0)
+			if self.__verbose:
+				print "Warning: Unable to set option for always masking. Falling back to default value."
 
 
 	def __about_close(self, widget, event=None):
@@ -248,16 +261,16 @@ class Mumbles(object):
 							print "Successfully loaded %s plugin" %(plugin.get_name())
 					except:
 						if self.__verbose:
-							print "Warning: Unable to load plugin for %s" %(name)
 							print '-'*40
 							print traceback.format_exc()
 							print '-'*40
+							print "Warning: Unable to load plugin for %s" %(name)
 		except:
 			if self.__verbose:
-				print "Error: Unable to load plugins"
 				print '-'*40
 				print traceback.format_exc()
 				print '-'*40
+				print "Error: Unable to load plugins"
 
 	# at least it's better than plain text...
 	def __encrypt(self, plain):
@@ -355,6 +368,13 @@ class Mumbles(object):
 			self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', 0)
 			if self.__verbose:
 				print "Warning: Unable to set option for vertical sliding. Falling back to default value."
+				
+		try:
+			self.__options.set_option(CONFIG_MN, 'always_mask_enabled', int(self.__options.get_option(CONFIG_MN, 'always_mask_enabled')))
+		except:
+			self.__options.set_option(CONFIG_MN, 'always_mask_enabled', 0)
+			if self.__verbose:
+				print "Warning: Unable to set option for always masking. Falling back to default value."
 
 
 		self.__themes = self.__get_themes()

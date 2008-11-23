@@ -296,14 +296,8 @@ class MumblesNotify(object):
 		# add plugin image
 		if not image:
 			image = os.path.join(UI_DIR, 'mumbles.png')
-		try:
-			plugin_image = gtk.gdk.pixbuf_new_from_file(image)
-		except:
-			loader = gtk.gdk.PixbufLoader()
-			loader.write(image)
-			loader.close()
-			plugin_image = loader.get_pixbuf()
-
+		try: plugin_image = gtk.gdk.pixbuf_new_from_file(image)
+		except: plugin_image = None
 		if plugin_image:
 			new_image = plugin_image.scale_simple(28, 28, gtk.gdk.INTERP_BILINEAR)  # FIX THIS TO BE CONFIGURED IN THE THEME (instead of hardcoded)
 			if not new_image: print 'ONOES WE ARE OUT OF MEMORY'
@@ -387,12 +381,19 @@ class MumblesNotify(object):
 		return False
 
 	def screen_changed(self, widget, old_screen=None):
+		try:
+			always_mask = int(self.options.get_option(CONFIG_MN,'always_mask_enabled'))
+		except:
+			print 'Warning: Invalid value of %s for horizontal_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'always_mask_enabled'))
+			always_mask = 0
         
 		# To check if the display supports alpha channels, get the colormap
 		screen = widget.get_screen()
 		try:
+			if always_mask: raise StandardError
 			colormap = screen.get_rgba_colormap()
-			self.__alpha_available = True
+			#print colormap.query_color
+			if colormap: self.__alpha_available = True
 		except:
 			colormap = None
 
@@ -458,17 +459,18 @@ class MumblesNotify(object):
 			if max_i == 0:
 				new_y = PANEL_HEIGHT
 			else:
-				new_y = PANEL_HEIGHT + (notify_height + spacing) * i
+				new_y = PANEL_HEIGHT + (notify_height + spacing) * max_i
 		else:
 			if max_i == 0:
 				new_y = gtk.gdk.screen_height() - (notify_height + spacing + PANEL_HEIGHT)
 			else:
-				new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (i+1) + PANEL_HEIGHT)
+				new_y = gtk.gdk.screen_height() - ((notify_height + spacing) * (max_i+1) + PANEL_HEIGHT)
 		self.__current_y = new_y
 		#self.__n_index = max_i
 		#self.__n_active = max_i
 	
 	def vslide_alert(self, win):
+		if win in self.offscreen and not win == self.offscreen[0]: return # removes flood problem
 		try:
 			cur_direction =  int(self.options.get_option(CONFIG_MN, 'notification_direction'))
 		except:
@@ -626,6 +628,7 @@ class MumblesNotify(object):
 		gobject.timeout_add(20, self.move_timeout, win, (dx, dy), track, inc, callback)
 	
 	def pause(self):
+		return # borked
 		self.paused = True
 		now = time.time()*1000
 		for win in self.visible:
@@ -634,11 +637,13 @@ class MumblesNotify(object):
 			self.timeout_list[win] = abs(self.timeout_list[win]-now)
 	
 	def resume(self):
+		return # borked
 		self.paused = False
 		now = time.time()*1000
 		for win in self.timeout_list:
-			gobject.timeout_add(int(self.timeout_list[win]), self.close_timeout, win)
-			self.timeout_list[win] += now
+			if not win in self.offscreen:
+				gobject.timeout_add(int(self.timeout_list[win]), self.close_timeout, win)
+				self.timeout_list[win] += now
 	
 	def hovered(self, widget, event):
 		x, y = widget.get_position()
@@ -669,7 +674,7 @@ class MumblesNotify(object):
 			if hasattr(widget, 'get_position'):
 				if widget in self.visible:
 					replacing = True
-					print replacing
+					#print replacing
 
 		# setup window
 		#win = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -797,5 +802,6 @@ class MumblesNotify(object):
 			if v_slide: self.smooth_move(win, new_x, new_y, callback=self.vslide_alert) #self.vslide_alert(win)
 			else: self.smooth_move(win, new_x, new_y)
 		elif v_slide: self.vslide_alert(win)
+		#print self.__n_active
 
 		return win
