@@ -237,8 +237,8 @@ class Mumbles(object):
 			pkg_resources.working_set.add_entry(PLUGIN_DIR_USER)
 			pkg_env = pkg_resources.Environment([PLUGIN_DIR, PLUGIN_DIR_USER])
 
-			try:
-				for name in pkg_env:
+			for name in pkg_env:
+				try:
 					egg = pkg_env[name][0]
 					egg.activate()
 					for name in egg.get_entry_map(ENTRY_POINT):
@@ -250,12 +250,12 @@ class Mumbles(object):
 
 						if self.__verbose:
 							print "Successfully loaded %s plugin" %(plugin.get_name())
-			except:
-				if self.__verbose:
-					print '-'*40
-					print traceback.format_exc()
-					print '-'*40
-					print "Warning: Unable to load plugin for %s" %(name)
+				except:
+					if self.__verbose:
+						print '-'*40
+						print traceback.format_exc()
+						print '-'*40
+						print "Warning: Unable to load plugin for %s" %(name)
 		except:
 			if self.__verbose:
 				print '-'*40
