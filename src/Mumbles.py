@@ -111,6 +111,7 @@ class Mumbles(object):
 		self.__options.set_option(CONFIG_MN, 'notification_placement', self.__preferences.get_widget('combo_screen_placement').get_active())
 		self.__options.set_option(CONFIG_MN, 'notification_direction', self.__preferences.get_widget('combo_direction').get_active())
 		self.__options.set_option(CONFIG_MN, 'notification_duration', self.__preferences.get_widget('spin_duration').get_value_as_int())
+		self.__options.set_option(CONFIG_MN, 'notification_alpha', self.__preferences.get_widget('spin_alpha').get_value_as_int())
 		self.__options.set_option(CONFIG_MN, 'theme', self.__preferences.get_widget('combo_theme').get_active_text())
 
 		self.__options.set_option(CONFIG_M, 'growl_network_enabled', int(self.__preferences.get_widget('check_growl_network').get_active()))
@@ -118,6 +119,10 @@ class Mumbles(object):
 		
 		self.__options.set_option(CONFIG_MN, 'horizontal_sliding_enabled', int(self.__preferences.get_widget('check_horizontal_sliding').get_active()))
 		self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', int(self.__preferences.get_widget('check_vertical_sliding').get_active()))
+		
+		self.__options.set_option(CONFIG_MN, 'fading_enabled', int(self.__preferences.get_widget('check_fading').get_active()))
+		self.__options.set_option(CONFIG_MN, 'fade_duration', self.__preferences.get_widget('spin_fade_duration').get_value_as_int())
+		self.__options.set_option(CONFIG_MN, 'fade_steps', self.__preferences.get_widget('spin_fade_steps').get_value_as_int())
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
@@ -179,6 +184,13 @@ class Mumbles(object):
 			if self.__verbose:
 				print "Warning: Unable to set option for notification_duration. Falling back to default value."
 
+		try:
+			self.__preferences.get_widget('spin_alpha').set_value(int(self.__options.get_option(CONFIG_MN, 'notification_alpha')))
+		except:
+			self.__preferences.get_widget('spin_alpha').set_value(100)
+			if self.__verbose:
+				print "Warning: Unable to set option for notification_alpha. Falling back to default value."
+
 		combo_theme = self.__preferences.get_widget('combo_theme')
 		selected_theme = self.__options.get_option(CONFIG_MN, 'theme')
 		index = 0
@@ -211,6 +223,26 @@ class Mumbles(object):
 			self.__preferences.get_widget('check_vertical_sliding').set_active(0)
 			if self.__verbose:
 				print "Warning: Unable to set option for vertical sliding. Falling back to default value."
+
+		try:
+			self.__preferences.get_widget('check_fading').set_active(int(self.__options.get_option(CONFIG_MN, 'fading_enabled')))
+		except:
+			self.__preferences.get_widget('check_fading').set_active(0)
+			if self.__verbose:
+				print "Warning: Unable to set option for fading. Falling back to default value."
+		try:
+			self.__preferences.get_widget('spin_fade_duration').set_value(int(self.__options.get_option(CONFIG_MN, 'fade_duration')))
+		except:
+			self.__preferences.get_widget('spin_fade_duration').set_value(300)
+			if self.__verbose:
+				print "Warning: Unable to set option for fade_duration. Falling back to default value."
+				
+		try:
+			self.__preferences.get_widget('spin_fade_steps').set_value(int(self.__options.get_option(CONFIG_MN, 'fade_steps')))
+		except:
+			self.__preferences.get_widget('spin_fade_steps').set_value(5)
+			if self.__verbose:
+				print "Warning: Unable to set option for fade_steps. Falling back to default value."
 
 
 	def __about_close(self, widget, event=None):

@@ -510,6 +510,24 @@ class MumblesNotify(object):
 			print 'Warning: Invalid value of %s for horizontal_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'horizontal_sliding_enabled'))
 			h_slide = 0
 		
+		
+		try:
+			fading = self.options.get_option(CONFIG_MN, 'fading_enabled')
+		except:
+			print "Warning: Invalid value of %s for fading_enabled. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'fading_enabled'))
+			fading = False
+		if fading:
+			try:
+				fade_duration = int(self.options.get_option(CONFIG_MN, 'fade_duration'))
+			except:
+				print "Warning: Invalid value of %s for fade_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'fade_duration'))
+				fade_duration = 300
+			try:
+				fade_steps = int(self.options.get_option(CONFIG_MN, 'fade_steps'))
+			except:
+				print "Warning: Invalid value of %s for fade_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'fade_steps'))
+				fade_steps = 20
+		
 		# if time out was triggered, destroy the gtk.Window
 		# otherwise, handling event call back from gtk.gdk.Window, so temporarily hide it # we don't need to anymore because it keeps track in self.visible
 		#try:
@@ -528,6 +546,7 @@ class MumblesNotify(object):
 		self.__n_active -= 1
 		# slide out or close
 		if h_slide: self.close_slide_out(win)
+		elif fading: self.fade_out(win, fade_duration, fade_steps)
 		else: self.destroy(win)
 		if win in self.win_placement: del self.win_placement[win]
 
@@ -639,6 +658,22 @@ class MumblesNotify(object):
 		x, y = widget.get_position()
 		widget.move(x+10, y)
 	
+	def fade_in(self, win, time, steps, max_alpha):
+		gobject.timeout_add(time/steps, self.fade_step_in, win, time, steps, 1, max_alpha)
+
+	def fade_step_in(self, win, time, steps, cur, max_alpha):
+		win.set_opacity(float(cur)/steps*max_alpha/100)
+		if cur < steps: gobject.timeout_add(time/steps, self.fade_step_in, win, time, steps, cur+1, max_alpha)
+	
+	def fade_out(self, win, time, steps):
+		alpha = win.get_opacity()
+		gobject.timeout_add(time/steps, self.fade_step_out, win, time, steps, steps, alpha)
+
+	def fade_step_out(self, win, time, steps, cur, max_alpha):
+		win.set_opacity(float(cur)/steps*max_alpha)
+		if cur > 0: gobject.timeout_add(time/steps, self.fade_step_out, win, time, steps, cur-1, max_alpha)
+		else: self.destroy(win)
+	
 	def init_close_timeout(self, win):
 		now = time.time()*1000
 		try:
@@ -654,6 +689,28 @@ class MumblesNotify(object):
 			self.timeout_list[win] = now+timeout
 
 	def alert(self, plugin_name, name, message, image=None, click_handler=None, widget=None):
+		try:
+			cur_alpha = int(self.options.get_option(CONFIG_MN, 'notification_alpha'))
+		except:
+			print "Warning: Invalid value of %s for notification_alpha. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_alpha'))
+			cur_alpha = 100
+		try:
+			fading = self.options.get_option(CONFIG_MN, 'fading_enabled')
+		except:
+			print "Warning: Invalid value of %s for fading_enabled. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'fading_enabled'))
+			fading = False
+		if fading:
+			try:
+				fade_duration = int(self.options.get_option(CONFIG_MN, 'fade_duration'))
+			except:
+				print "Warning: Invalid value of %s for fade_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'fade_duration'))
+				fade_duration = 300
+			try:
+				fade_steps = int(self.options.get_option(CONFIG_MN, 'fade_steps'))
+			except:
+				print "Warning: Invalid value of %s for fade_duration. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'fade_steps'))
+				fade_steps = 20
+				
 		# figure out whether we are replacing the window or making a new one
 		replacing = False
 		if widget:
@@ -690,6 +747,8 @@ class MumblesNotify(object):
 		win.set_skip_pager_hint(True)
 		win.set_accept_focus(False)
 		win.set_keep_above(True)
+		if fading: win.set_opacity(0)
+		else: win.set_opacity(float(cur_alpha)/100)
 		win.stick()
 
 		# initialize for the current display
@@ -784,6 +843,8 @@ class MumblesNotify(object):
 		self.win_placement[win] = n_index
 		win.show_all()
 		#if replacing: widget.hide()
+		if fading:
+			self.fade_in(win, fade_duration, fade_steps, cur_alpha)
 		if h_slide:
 			if v_slide: self.smooth_move(win, new_x, new_y, callback=self.vslide_alert) #self.vslide_alert(win)
 			else: self.smooth_move(win, new_x, new_y)
