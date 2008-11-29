@@ -91,7 +91,10 @@ class Mumbles(object):
 			"on_about_activate" : self.__menu_about_activate,
 			"on_quit_activate" : self.__menu_quit_activate
 		}
-		self.__get_widget_by_name(self.__panel_glade, 'mumbles_menu', signals).popup(None, None, None, button, activate_time)
+		menu = self.__get_widget_by_name(self.__panel_glade, 'mumbles_menu', signals)
+		if not os.name == 'nt' and gtk.status_icon_position_menu(menu, status_icon):
+			menu.popup(None, None, gtk.status_icon_position_menu, button, activate_time, status_icon)
+		else: menu.popup(None, None, None, button, activate_time)
 
 	# menu activation for egg.trayicon
 	def __egg_menu_activate(self, widget, event=None):
@@ -103,7 +106,9 @@ class Mumbles(object):
 			}
 			menu_widget = self.__get_widget_by_name(self.__panel_glade, "mumbles_menu", signals)
 			menu_widget.set_screen(widget.get_screen())
-			menu_widget.popup(None, None, None, event.button, event.time)
+			if not os.name == 'nt' and gtk.status_icon_position_menu(menu, widget):
+				menu_widget.popup(None, None, gtk.status_icon_position_menu, event.button, event.time, widget)
+			else: menu_widget.popup(None, None, None, event.button, event.time)
 
 	def __preferences_ok(self, widget):
 
