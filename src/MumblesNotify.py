@@ -380,32 +380,18 @@ class MumblesNotify(object):
 
 		return False
 
-	def screen_changed(self, widget, old_screen=None):
-		try:
-			always_mask = int(self.options.get_option(CONFIG_MN,'always_mask_enabled'))
-		except:
-			print 'Warning: Invalid value of %s for horizontal_sliding_enabled. Falling back to default value.' %(self.options.get_option(CONFIG_MN,'always_mask_enabled'))
-			always_mask = 0
-        
-		# To check if the display supports alpha channels, get the colormap
+	def screen_changed(self, widget, old_screen=None):        
 		screen = widget.get_screen()
-		try:
-			if always_mask: raise StandardError
+
+		# check if the widget supports alpha channels
+		if widget.is_composited():
 			colormap = screen.get_rgba_colormap()
-			#print colormap.query_color
-			if colormap: self.__alpha_available = True
-		except:
-			colormap = None
-
-		if colormap == None:
+			self.__alpha_available = True
+		else:
+			colormap = screen.get_rgb_colormap()
 			self.__alpha_available = False
-			try:
-				colormap = screen.get_rgb_colormap()
-				self.__alpha_available = False
-			except:
-				colormap = None
-
-		# Now we have a colormap appropriate for the screen, use it
+			
+		# Now we have a colormap appropriate for the widget, use it
 		widget.set_colormap(colormap)
     
 		return False

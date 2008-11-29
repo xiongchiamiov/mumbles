@@ -118,8 +118,6 @@ class Mumbles(object):
 		
 		self.__options.set_option(CONFIG_MN, 'horizontal_sliding_enabled', int(self.__preferences.get_widget('check_horizontal_sliding').get_active()))
 		self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', int(self.__preferences.get_widget('check_vertical_sliding').get_active()))
-		
-		self.__options.set_option(CONFIG_MN, 'always_mask_enabled', int(self.__preferences.get_widget('check_always_mask').get_active()))
 
 		self.__options.save()
 		self.__mumbles_notify.set_options(self.__options)
@@ -213,13 +211,6 @@ class Mumbles(object):
 			self.__preferences.get_widget('check_vertical_sliding').set_active(0)
 			if self.__verbose:
 				print "Warning: Unable to set option for vertical sliding. Falling back to default value."
-				
-		try:
-			self.__preferences.get_widget('check_always_mask').set_active(int(self.__options.get_option(CONFIG_MN, 'always_mask_enabled')))
-		except:
-			self.__preferences.get_widget('check_always_mask').set_active(0)
-			if self.__verbose:
-				print "Warning: Unable to set option for always masking. Falling back to default value."
 
 
 	def __about_close(self, widget, event=None):
@@ -246,25 +237,25 @@ class Mumbles(object):
 			pkg_resources.working_set.add_entry(PLUGIN_DIR_USER)
 			pkg_env = pkg_resources.Environment([PLUGIN_DIR, PLUGIN_DIR_USER])
 
-			for name in pkg_env:
-				egg = pkg_env[name][0]
-				egg.activate()
-				for name in egg.get_entry_map(ENTRY_POINT):
-					entry_point = egg.get_entry_info(ENTRY_POINT, name)
-					plugin_cls = entry_point.load()
-
-					try:
+			try:
+				for name in pkg_env:
+					egg = pkg_env[name][0]
+					egg.activate()
+					for name in egg.get_entry_map(ENTRY_POINT):
+						entry_point = egg.get_entry_info(ENTRY_POINT, name)
+						plugin_cls = entry_point.load()
+						
 						plugin = plugin_cls(self.__mumbles_notify, self.__bus)
 						self.__plugins[plugin.get_name()] = plugin
 
 						if self.__verbose:
 							print "Successfully loaded %s plugin" %(plugin.get_name())
-					except:
-						if self.__verbose:
-							print '-'*40
-							print traceback.format_exc()
-							print '-'*40
-							print "Warning: Unable to load plugin for %s" %(name)
+			except:
+				if self.__verbose:
+					print '-'*40
+					print traceback.format_exc()
+					print '-'*40
+					print "Warning: Unable to load plugin for %s" %(name)
 		except:
 			if self.__verbose:
 				print '-'*40
@@ -368,14 +359,6 @@ class Mumbles(object):
 			self.__options.set_option(CONFIG_MN, 'vertical_sliding_enabled', 0)
 			if self.__verbose:
 				print "Warning: Unable to set option for vertical sliding. Falling back to default value."
-				
-		try:
-			self.__options.set_option(CONFIG_MN, 'always_mask_enabled', int(self.__options.get_option(CONFIG_MN, 'always_mask_enabled')))
-		except:
-			self.__options.set_option(CONFIG_MN, 'always_mask_enabled', 0)
-			if self.__verbose:
-				print "Warning: Unable to set option for always masking. Falling back to default value."
-
 
 		self.__themes = self.__get_themes()
 
