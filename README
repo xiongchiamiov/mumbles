@@ -34,14 +34,9 @@ use "mumbles --verbose" for more information
 -- Pre-release Notes --
 * Version 0.4.2 includes a new generic dbus plugin that allows simple additions of
 mumbles alerts for dbus signals. Some of the plugins from the previous release have
-been removed in favor of this method. At this time, you will have to copy the conf file
-by hand - we plan on having this happen automatically by release, but make sure you copy
-
-src/dbus.conf.sample
-to
-~/.mumbles/dbus.conf
-
-And check out the options!
+been removed in favor of this method.
+Run mumbles and check out the options in
+~/.mumbles/generic
 
 * Also, 0.4.2 includes a new libnotify interceptor. libnotify messages will now be replaced with mumbles alerts.
 If you prefer to not have this happen, delete the libnotify .egg file.

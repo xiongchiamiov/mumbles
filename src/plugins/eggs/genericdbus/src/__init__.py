@@ -6,20 +6,25 @@
 #------------------------------------------------------------------------
 
 from MumblesPlugin import *
+from MumblesGlobals import *
 
 import sys, os, gnomevfs, re, traceback
 from ConfigParser import ConfigParser
 import gtk
+import shutil
 
 class GenericDBUSMumbles(MumblesPlugin):
 
 	plugin_name = "GenericDBUSMumbles"
+	config_dir = os.path.join(os.path.expanduser('~'), '.mumbles', 'generic')
 	dbus_watches = {}
 	replace = {}
 
 	def __init__(self, mumbles_notify, session_bus):
 		self.mumbles_notify = mumbles_notify
 		self.session_bus = session_bus
+
+		self.initConfig()
 		
 		self.parseConfig()
 		
@@ -29,11 +34,18 @@ class GenericDBUSMumbles(MumblesPlugin):
 				signal_name = watch['signal'],
 				dbus_interface = watch['interface'],
 				path = watch['path'],)
+
+	def initConfig(self):
+		if not os.path.isdir(self.config_dir):
+			examples = os.path.join(PLUGIN_DIR, 'eggs', 'genericdbus', 'examples')
+			shutil.copytree(examples, self.config_dir)
 	
 	def parseConfig(self):
 		# do magic to figure out where to parse from etc
 		config_files = []
-		config_files.append( os.path.join(os.path.expanduser('~'), '.mumbles', 'dbus.conf') )
+		tmp_list = os.listdir(self.config_dir)
+		for tmp_conf in tmp_list:
+			config_files.append( os.path.join(self.config_dir, tmp_conf) )
 		# parse the config file(s)
 		parser = ConfigParser()
 		parser.read(config_files)
