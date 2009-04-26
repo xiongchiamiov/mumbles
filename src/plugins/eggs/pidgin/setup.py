@@ -21,7 +21,6 @@ setup(
 	author=__author__,
 	packages=['pidginmumbles'],
 	package_dir={'pidginmumbles':'src'},
-	package_data={'':['themes/pidgin.png', 'themes/irc.png']},
 	entry_points='''
 	[mumbles.plugins]
 	PidginMumbles = pidginmumbles:PidginMumbles

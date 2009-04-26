@@ -21,7 +21,7 @@ class RhythmboxMumbles(MumblesPlugin):
 	dbus_shell_path = "/org/gnome/Rhythmbox/Shell"
 
 	icons = {
-		'rhythmbox' : 'rhythmbox.png'
+		'rhythmbox' : 'rhythmbox.svg'
 	}
 
 	def __init__(self, mumbles_notify, session_bus):

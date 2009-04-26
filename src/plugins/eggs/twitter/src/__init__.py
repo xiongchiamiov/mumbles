@@ -18,7 +18,7 @@ class TwitterMumbles(MumblesPlugin):
 	dbus_interface = "com.twitter.DBus"
 	dbus_path = "/com/twitter/DBus"
 
-	icons = {'twitter' : 'twitter.png'}
+	icons = {'twitter' : 'twitter.svg'}
 
 	__url = None
 

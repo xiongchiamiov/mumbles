@@ -28,7 +28,8 @@ class LibNotifyServiceObject(dbus.service.Object):
 
 	@dbus.service.method("org.freedesktop.Notifications", in_signature='', out_signature='as')
 	def GetCapabilities(self):
-		return ('body', 'body-markup')
+		#return ('body', 'body-markup')
+		return ('body')
   
 	@dbus.service.method("org.freedesktop.Notifications", in_signature='u', out_signature='')
 	def CloseNotification(self, id):

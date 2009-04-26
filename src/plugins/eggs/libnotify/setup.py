@@ -21,7 +21,6 @@ setup(
 	author=__author__,
 	packages=['libnotifymumbles'],
 	package_dir={'libnotifymumbles':'src'},
-	package_data={'':['themes/libnotify.png']},
 	entry_points='''
 	[mumbles.plugins]
 	LibNotifyMumbles = libnotifymumbles:LibNotifyMumbles

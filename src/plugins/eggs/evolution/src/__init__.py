@@ -19,7 +19,7 @@ class EvolutionMumbles(MumblesPlugin):
     dbus_path = "/org/gnome/evolution/mail/newmail"
 
     # Configure our plugin icon
-    icons = {'evolution' : 'evolution.png'}
+    icons = {'evolution' : 'evolution.svg'}
 
     # setup the __init__ function where we define
     # the dbus signal(s), to which, we are connecting.

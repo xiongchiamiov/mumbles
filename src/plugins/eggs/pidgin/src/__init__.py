@@ -24,7 +24,7 @@ class PidginMumbles(MumblesPlugin):
 	dbus_name = "im.pidgin.purple.PurpleService"
 	
 	# Configure our plugin icons
-	icons = {'pidgin' : 'pidgin.png', 'irc' : 'irc.png'}
+	icons = {'pidgin' : 'pidgin.svg', 'irc' : 'irc.svg'}
 
 	def __init__(self, mumbles_notify, session_bus):
 

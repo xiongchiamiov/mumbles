@@ -338,7 +338,8 @@ class MumblesNotify(object):
 
 		# add plugin image
 		if not image:
-			image = os.path.join(UI_DIR, 'mumbles.png')
+			image = os.path.join(UI_DIR, 'mumbles.svg')
+			print "image: %s" %image
 		try: plugin_image = gtk.gdk.pixbuf_new_from_file(image)
 		except: plugin_image = None
 		if plugin_image:
@@ -409,7 +410,7 @@ class MumblesNotify(object):
 		p_fdesc = pango.FontDescription()
 		p_fdesc.set_family(self.options.get_option(CONFIG_MT, 'text_message_font'))
 		p_fdesc.set_size(self.options.get_option(CONFIG_MT, 'text_message_size') * pango.SCALE)
-		p_fdesc.set_weight(pango.WEIGHT_BOLD)
+		#p_fdesc.set_weight(pango.WEIGHT_BOLD)
 
 		p_layout_message.set_font_description(p_fdesc)
 		p_layout_message.set_text(message)
