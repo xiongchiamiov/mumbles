@@ -8,11 +8,15 @@
 # Some of the request handler code is from technovelty.com
 #    http://www.technovelty.org/code/python/socketserver.html
 
-import SocketServer, time, select, sys, md5, struct
+import SocketServer, time, select, sys, struct
 from threading import Thread
 import os
 import dbus
 import dbus.service
+try:
+	import hashlib
+except ImportError:
+	import md5
 
 GROWL_UDP_PORT=9887
 GROWL_PROTOCOL_VERSION=1
@@ -39,7 +43,10 @@ class GrowlPacket:
 		self.valid = False
 		self.data = data
 		self.digest = self.data[-16:]
-		checksum = md5.new()
+		try:
+			checksum = hashlib.md5()
+		except:
+			checksum = md5.new()
 		checksum.update(self.data[:-16])
 		if password:
 			checksum.update(password)
@@ -102,7 +109,10 @@ class GrowlNotificationPacket:
 		self.data += self.description
 		self.data += self.application
 
-		self.checksum = md5.new()
+		try:
+			self.checksum = hashlib.md5()
+		except:
+			self.checksum = md5.new()
 		self.checksum.update(self.data)
 		if password:
 			self.checksum.update(password)
@@ -156,7 +166,10 @@ class GrowlRegistrationPacket:
 		for default in self.defaults:
       			self.data += struct.pack("B", default)
 
-		self.checksum = md5.new()
+		try:
+			self.checksum = hashlib.md5()
+		except:
+			self.checksum = md5.new()
 		self.checksum.update(self.data)
 		if self.password:
 			self.checksum.update(self.password)

@@ -1,6 +1,7 @@
 <mumbles-theme name='bubble' version='1.0'>
 	<width>250</width>
 	<height>90</height>
+	<use_system_colors>1</use_system_colors>
 	<spacing>5</spacing>
 	<icon>
 		<x_pos>22</x_pos>
@@ -10,7 +11,6 @@
 		<title>
 			<font>
 				<family>Free Sans</family>
-				<color>#fff</color>
 				<size>10</size>
 			</font>
 			<width>250</width>
@@ -25,7 +25,6 @@
 		<message>
 			<font>
 				<family>Free Sans</family>
-				<color>#fff</color>
 				<size>8</size>
 			</font>
 			<width>250</width>

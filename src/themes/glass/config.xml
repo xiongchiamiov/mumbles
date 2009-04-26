@@ -1,6 +1,8 @@
 <mumbles-theme name='glass' version='1.0'>
 	<width>250</width>
 	<height>80</height>
+	<use_system_colors>1</use_system_colors>
+	<color>#000</color>
 	<spacing>10</spacing>
 	<icon>
 		<x_pos>10</x_pos>
@@ -10,7 +12,6 @@
 		<title>
 			<font>
 				<family>Free Sans</family>
-				<color>#fff</color>
 				<size>12</size>
 			</font>
 			<width>250</width>
@@ -25,7 +26,6 @@
 		<message>
 			<font>
 				<family>Free Sans</family>
-				<color>#fff</color>
 				<size>8</size>
 			</font>
 			<width>250</width>

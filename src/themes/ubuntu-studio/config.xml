@@ -1,6 +1,8 @@
 <mumbles-theme name='default' version='1.0'>
 	<width>265</width>
 	<height>95</height>
+	<use_system_colors>0</use_system_colors>
+	<color>#000</color>
 	<spacing>3</spacing>
 	<icon>
 		<x_pos>10</x_pos>

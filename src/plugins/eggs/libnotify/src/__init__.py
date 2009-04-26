@@ -42,6 +42,7 @@ class LibNotifyMumbles(MumblesPlugin):
 		tmp = iface.RequestName('org.freedesktop.Notifications', 0)
 
 		os.system("killall notification-daemon > /dev/null 2>&1")
+		os.system("killall notify-osd > /dev/null 2>&1")
 
 		self.service_object = LibNotifyServiceObject(session_bus, self)
 

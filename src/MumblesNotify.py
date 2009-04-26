@@ -25,6 +25,7 @@ from xml.dom.minidom import Node
 from MumblesGlobals import *
 from OptionsHandler import *
 
+
 # used for notification placement as they will be auto moved below/above the panels
 # so expect both panels to be showing and place accordingly
 PANEL_HEIGHT = 25
@@ -51,6 +52,8 @@ class MumblesNotifyOptions(OptionsHandler):
 			# dimenstions of the notification area
 			'width' : 250,
 			'height' : 80,
+			'use_system_colors' : 0,
+			'color' : None,
 
 			# spacing between notifications
 			'spacing' : 10,
@@ -63,7 +66,7 @@ class MumblesNotifyOptions(OptionsHandler):
 			'text_title_width' : 250,
 			'text_title_height' : 20,
 			'text_title_font' : 'Sans',
-			'text_title_color' : '#fff',
+			'text_title_color' : None,
 			'text_title_size' : 10,
 			'text_title_padding_left' : 15,
 			'text_title_padding_right' : 5,
@@ -73,7 +76,7 @@ class MumblesNotifyOptions(OptionsHandler):
 			'text_message_width' : 250,
 			'text_message_height' : 60,
 			'text_message_font' : 'Sans',
-			'text_message_color' : '#fff',
+			'text_message_color' : None,
 			'text_message_size' : 8,
 			'text_message_padding_left' : 40,
 			'text_message_padding_right' : 5,
@@ -84,6 +87,8 @@ class MumblesNotifyOptions(OptionsHandler):
 		self.xml_config_array = {
 			'width'  : ['width', 'int'],
 			'height' : ['height', 'int'],
+			'use_system_colors' : ['use_system_colors', 'int'],
+			'color'  : ['color', 'string'],
 			'spacing' : ['spacing', 'int'],
 			'icon' : {
 				'x_pos' : ['icon_x_pos', 'int'],
@@ -181,18 +186,20 @@ class MumblesNotify(object):
 
 		for outerNodeName in xml_config:
 			#for node in xml_item.getElementsByTagName(outerNodeName):
-			node = xml_item.getElementsByTagName(outerNodeName)[0]
-			if node.nodeType == Node.ELEMENT_NODE:
-				if type(xml_config[node.nodeName]) is dict:
-					self.process_xml_options(xml_config[node.nodeName], node)
-				else:
-					if xml_config[node.nodeName][1] == 'int':
-						try:
-							self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
-						except:
-							raise Exception("Warning: Invalid value for option %s. Expected integer." %(xml_config[node.nodeName][0]))
+			node_a = xml_item.getElementsByTagName(outerNodeName)
+			if node_a:
+				node = xml_item.getElementsByTagName(outerNodeName)[0]
+				if node.nodeType == Node.ELEMENT_NODE:
+					if type(xml_config[node.nodeName]) is dict:
+						self.process_xml_options(xml_config[node.nodeName], node)
 					else:
-						self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], node.firstChild.nodeValue)
+						if xml_config[node.nodeName][1] == 'int':
+							try:
+								self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], int(node.firstChild.nodeValue))
+							except:
+								raise Exception("Warning: Invalid value for option %s. Expected integer." %(xml_config[node.nodeName][0]))
+						else:
+							self.options.set_option(CONFIG_MT, xml_config[node.nodeName][0], node.firstChild.nodeValue)
 
 
 	def add_options_from_config(self, theme_name, theme_xml):
@@ -254,44 +261,80 @@ class MumblesNotify(object):
 
 		cr = widget.window.cairo_create()
 
-        	# restrict to window area
+        # restrict to window area
 		cr.rectangle(event.area.x, event.area.y, event.area.width, event.area.height)
 		cr.clip()
 
-		if self.__alpha_available:
-			cr.set_source_rgba(0.0, 0.0, 0.0, 0.0)
+		if self.options.get_option(CONFIG_MT, 'use_system_colors'):
+			theme_style = gtk.Invisible().get_style()
+			background_color = theme_style.bg[gtk.STATE_NORMAL]
+			font_color = theme_style.fg[gtk.STATE_NORMAL]
 		else:
-			cr.set_source_rgb(0.0, 0.0, 0.0)
+			background_color = gtk.gdk.color_parse('#000')
+			font_color = gtk.gdk.color_parse('#fff')
+
+		if (self.options.get_option(CONFIG_MT, 'color') is not None):
+			background_color = gtk.gdk.color_parse(self.options.get_option(CONFIG_MT, 'color'))
+
+		try:
+			cur_alpha = int(self.options.get_option(CONFIG_MN, 'notification_alpha'))
+		except:
+			print "Warning: Invalid value of %s for notification_alpha. Falling back to default value." %(self.options.get_option(CONFIG_MN, 'notification_alpha'))
+			cur_alpha = 100
+		alpha = float(cur_alpha)/100
+
+		# divide by max color (as float) to get correct value in 0-1 range
+		# what's the const for this...?
+		font_color_t = [font_color.red / 65535.0, font_color.green / 65535.0, font_color.blue / 65535.0, 1]
+		background_color_t = [background_color.red / 65535.0, background_color.green / 65535.0, background_color.blue / 65535.0, alpha]
+
+		if self.__alpha_available:
+			cr.set_source_rgba(*background_color_t)
+		else:
+			cr.set_source_color(background_color)
 
 		cr.set_operator(cairo.OPERATOR_SOURCE)
 
 		# Draw the background
-		background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
-		background_mask = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bgmask.png')
-		default_background_image = os.path.join(THEMES_DIR, 'default', 'bground.png')
-		default_background_mask = os.path.join(THEMES_DIR, 'default', 'bgmask.png')
+		background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.svg')
+		if not os.path.exists(background_image):
+			background_image = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bground.png')
+
+		background_mask = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bgmask.svg')
+		if not os.path.exists(background_mask):
+			background_mask = os.path.join(THEMES_DIR, self.options.get_option(CONFIG_MN, 'theme'), 'bgmask.png')
+
+		if not os.path.exists(background_image):
+			background_image = None
+			background_mask = os.path.join(THEMES_DIR, 'default', 'bgmask.svg')
+
+		pixbuf= None
+		if (background_image and os.path.exists(background_image)):
+			pixbuf = gtk.gdk.pixbuf_new_from_file(background_image)
 
 		maskpixbuf = None
-		if os.path.exists(background_image):
-			pixbuf = gtk.gdk.pixbuf_new_from_file(background_image)
+		if os.path.exists(background_mask):
 			if os.path.exists(background_mask): maskpixbuf = gtk.gdk.pixbuf_new_from_file(background_mask)
-		elif os.path.exists(default_background_image):
-			pixbuf = gtk.gdk.pixbuf_new_from_file(default_background_image)
-			if os.path.exists(default_background_mask): maskpixbuf = gtk.gdk.pixbuf_new_from_file(default_background_mask)
-		else:
-			pixbuf = None
 			
+		if maskpixbuf:
+			pixmap, image_mask = maskpixbuf.render_pixmap_and_mask()
+			widget.window.shape_combine_mask(image_mask, 0, 0)
+			if self.__alpha_available:
+				cr.set_source_rgba(*background_color_t)
+			cr.paint()
+			# not sure how to keep the background image (color) w/o calling
+			# create again...
+			if background_image is not None:
+				cr = widget.window.cairo_create()
+
 		if pixbuf:
-			if maskpixbuf and not self.__alpha_available:
-				null, image_mask = maskpixbuf.render_pixmap_and_mask()
-				widget.window.shape_combine_mask(image_mask, 0, 0)
+			if background_mask is None:
+				cr = widget.window.cairo_create()
 			cr.set_source_pixbuf(pixbuf, 0, 0)
 			cr.paint()
 		else:
 			cr.rectangle(0, 0, self.options.get_option(CONFIG_MT, 'width'), self.options.get_option(CONFIG_MT, 'height'))
 			cr.fill()
-		
-		
 
 		# add plugin image
 		if not image:
@@ -300,7 +343,7 @@ class MumblesNotify(object):
 		except: plugin_image = None
 		if plugin_image:
 			new_image = plugin_image.scale_simple(28, 28, gtk.gdk.INTERP_BILINEAR)  # FIX THIS TO BE CONFIGURED IN THE THEME (instead of hardcoded)
-			if not new_image: print 'ONOES WE ARE OUT OF MEMORY'
+			if not new_image: print 'Warning: Out of memory?'
 			else: plugin_image = new_image
 			widget.window.draw_pixbuf(None, plugin_image, 0, 0, self.options.get_option(CONFIG_MT, 'icon_x_pos'), self.options.get_option(CONFIG_MT, 'icon_y_pos'))
 			
@@ -336,8 +379,12 @@ class MumblesNotify(object):
 		cr.clip()
 		cr.move_to(left_edge, upper_edge)
 
-		c = self.convert_hex_to_rgb(self.options.get_option(CONFIG_MT, 'text_title_color'))
-		cr.set_source_rgba(c[0], c[1], c[2])
+		if (self.options.get_option(CONFIG_MT, 'text_title_color') is not None):
+			fc = self.options.get_option(CONFIG_MT, 'text_title_color')
+			c = self.convert_hex_to_rgb(fc)
+			cr.set_source_rgba(c[0], c[1], c[2])
+		else:
+			cr.set_source_rgba(*font_color_t)
 		cr.show_layout(p_layout_title)
 
 		cr.reset_clip()
@@ -374,8 +421,12 @@ class MumblesNotify(object):
 		cr.set_source_rgba(1, 1, 1)
 		cr.show_layout(p_layout_message)
 
-		c = self.convert_hex_to_rgb(self.options.get_option(CONFIG_MT, 'text_message_color'))
-		cr.set_source_rgba(c[0], c[1], c[2])
+		if (self.options.get_option(CONFIG_MT, 'text_message_color') is not None):
+			fc = self.options.get_option(CONFIG_MT, 'text_message_color')
+			c = self.convert_hex_to_rgb(fc)
+			cr.set_source_rgba(c[0], c[1], c[2])
+		else:
+			cr.set_source_rgba(*font_color_t)
 		cr.show_layout(p_layout_message)
 
 		return False
