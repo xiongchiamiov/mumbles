@@ -18,12 +18,35 @@ class LibNotifyServiceObject(dbus.service.Object):
 		self.mumbles_plugin = plugin
 		dbus.service.Object.__init__(self, bus, '/org/freedesktop/Notifications')
 
+	# methods
 	@dbus.service.method(dbus_interface='org.freedesktop.Notifications', in_signature='susssasa{sv}i', out_signature='i')
 	def Notify(self,app_name,replaces_id,app_icon,summary,body,actions,hints,expire_timeout):
 		if not os.path.exists(app_icon):
 			app_icon = ''
 		self.mumbles_plugin.mumbles_notify.alert(app_name, summary, body, app_icon)
 		return replaces_id
+
+	@dbus.service.method("org.freedesktop.Notifications", in_signature='', out_signature='as')
+	def GetCapabilities(self):
+		return ('body', 'body-markup')
+  
+	@dbus.service.method("org.freedesktop.Notifications", in_signature='u', out_signature='')
+	def CloseNotification(self, id):
+		pass
+
+	@dbus.service.method("org.freedesktop.Notifications", in_signature='', out_signature='ssss')
+	def GetServerInformation(self):
+		return 'LibNotifyMumbles', 'mumbles-project.org', '0.4.2', '0.9'
+
+	# signals
+	@dbus.service.signal('org.freedesktop.Notifications', signature='uu')
+	def NotificationClosed(self, id, reason):
+		pass
+
+	@dbus.service.signal('org.freedesktop.Notifications', signature='us')
+	def ActionInvoked(self, id, action_key):
+		pass
+ 
 
 class LibNotifyMumbles(MumblesPlugin):
 
