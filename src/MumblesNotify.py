@@ -339,7 +339,6 @@ class MumblesNotify(object):
 		# add plugin image
 		if not image:
 			image = os.path.join(UI_DIR, 'mumbles.svg')
-			print "image: %s" %image
 		try: plugin_image = gtk.gdk.pixbuf_new_from_file(image)
 		except: plugin_image = None
 		if plugin_image:
