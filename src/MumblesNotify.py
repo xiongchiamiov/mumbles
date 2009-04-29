@@ -34,7 +34,9 @@ class MumblesNotifyOptions(OptionsHandler):
 
 	def __init__(self):
 		OptionsHandler.__init__(self)
+		self.reset()
 
+	def reset(self):
 		self.options[CONFIG_MN] = {
 			# placement and direction of notifications
 			'notification_placement' : CONFIG_NOTIFY_PLACEMENT_RIGHT,
@@ -173,6 +175,7 @@ class MumblesNotify(object):
 		self.paused = False
 
 	def set_options(self, new_options):
+		self.options.reset()
 		self.options.add_options(new_options)
 		theme_name = self.options.get_option(CONFIG_MN, 'theme')
 		theme_xml = os.path.join(THEMES_DIR_USER, theme_name, 'config.xml')
